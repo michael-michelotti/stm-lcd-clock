@@ -20,6 +20,8 @@
 #define SET				ENABLE
 #define RESET			DISABLE
 
+#define HSI_CLK_SPEED	16000000u
+
 
 /*************** MEMORY ADDRESSES *****************/
 // Major memory segment addresses
@@ -230,33 +232,38 @@ typedef struct
 
 /*************** CLOCK ENABLE/DISABLE/RESET MACROS *****************/
 // Enable GPIO clocks
-#define GPIOA_PCLK_EN() 		( RCC->AHB1EN |= ( 1 << 0 ) )
-#define GPIOB_PCLK_EN() 		( RCC->AHB1EN |= ( 1 << 1 ) )
-#define GPIOC_PCLK_EN() 		( RCC->AHB1EN |= ( 1 << 2 ) )
-#define GPIOD_PCLK_EN() 		( RCC->AHB1EN |= ( 1 << 3 ) )
-#define GPIOE_PCLK_EN() 		( RCC->AHB1EN |= ( 1 << 4 ) )
-#define GPIOF_PCLK_EN() 		( RCC->AHB1EN |= ( 1 << 5 ) )
-#define GPIOG_PCLK_EN() 		( RCC->AHB1EN |= ( 1 << 6 ) )
-#define GPIOH_PCLK_EN() 		( RCC->AHB1EN |= ( 1 << 7 ) )
-#define GPIOI_PCLK_EN() 		( RCC->AHB1EN |= ( 1 << 8 ) )
+#define GPIOA_PCLK_EN() 		( RCC->AHB1ENR |= ( 1 << 0 ) )
+#define GPIOB_PCLK_EN() 		( RCC->AHB1ENR |= ( 1 << 1 ) )
+#define GPIOC_PCLK_EN() 		( RCC->AHB1ENR |= ( 1 << 2 ) )
+#define GPIOD_PCLK_EN() 		( RCC->AHB1ENR |= ( 1 << 3 ) )
+#define GPIOE_PCLK_EN() 		( RCC->AHB1ENR |= ( 1 << 4 ) )
+#define GPIOF_PCLK_EN() 		( RCC->AHB1ENR |= ( 1 << 5 ) )
+#define GPIOG_PCLK_EN() 		( RCC->AHB1ENR |= ( 1 << 6 ) )
+#define GPIOH_PCLK_EN() 		( RCC->AHB1ENR |= ( 1 << 7 ) )
+#define GPIOI_PCLK_EN() 		( RCC->AHB1ENR |= ( 1 << 8 ) )
 // Disable GPIO clocks
-#define GPIOA_PCLK_DI() 		( RCC->AHB1EN &= ~( 1 << 0 ) )
-#define GPIOB_PCLK_DI() 		( RCC->AHB1EN &= ~( 1 << 1 ) )
-#define GPIOC_PCLK_DI() 		( RCC->AHB1EN &= ~( 1 << 2 ) )
-#define GPIOD_PCLK_DI() 		( RCC->AHB1EN &= ~( 1 << 3 ) )
-#define GPIOE_PCLK_DI() 		( RCC->AHB1EN &= ~( 1 << 4 ) )
-#define GPIOF_PCLK_DI() 		( RCC->AHB1EN &= ~( 1 << 5 ) )
-#define GPIOG_PCLK_DI() 		( RCC->AHB1EN &= ~( 1 << 6 ) )
-#define GPIOH_PCLK_DI() 		( RCC->AHB1EN &= ~( 1 << 7 ) )
-#define GPIOI_PCLK_DI() 		( RCC->AHB1EN &= ~( 1 << 8 ) )
+#define GPIOA_PCLK_DI() 		( RCC->AHB1ENR &= ~( 1 << 0 ) )
+#define GPIOB_PCLK_DI() 		( RCC->AHB1ENR &= ~( 1 << 1 ) )
+#define GPIOC_PCLK_DI() 		( RCC->AHB1ENR &= ~( 1 << 2 ) )
+#define GPIOD_PCLK_DI() 		( RCC->AHB1ENR &= ~( 1 << 3 ) )
+#define GPIOE_PCLK_DI() 		( RCC->AHB1ENR &= ~( 1 << 4 ) )
+#define GPIOF_PCLK_DI() 		( RCC->AHB1ENR &= ~( 1 << 5 ) )
+#define GPIOG_PCLK_DI() 		( RCC->AHB1ENR &= ~( 1 << 6 ) )
+#define GPIOH_PCLK_DI() 		( RCC->AHB1ENR &= ~( 1 << 7 ) )
+#define GPIOI_PCLK_DI() 		( RCC->AHB1ENR &= ~( 1 << 8 ) )
 // Enable I2C clocks
-#define I2C1_PCLK_EN() 			( RCC->APB1EN |= ( 1 << 21 ) )
-#define I2C2_PCLK_EN() 			( RCC->APB1EN |= ( 1 << 22 ) )
-#define I2C3_PCLK_EN() 			( RCC->APB1EN |= ( 1 << 23 ) )
+#define I2C1_PCLK_EN() 			( RCC->APB1ENR |= ( 1 << 21 ) )
+#define I2C2_PCLK_EN() 			( RCC->APB1ENR |= ( 1 << 22 ) )
+#define I2C3_PCLK_EN() 			( RCC->APB1ENR |= ( 1 << 23 ) )
 // Disable I2C clocks
-#define I2C1_PCLK_DI() 			( RCC->APB1EN &= ~( 1 << 21 ) )
-#define I2C2_PCLK_DI() 			( RCC->APB1EN &= ~( 1 << 22 ) )
-#define I2C3_PCLK_DI() 			( RCC->APB1EN &= ~( 1 << 23 ) )
+#define I2C1_PCLK_DI() 			( RCC->APB1ENR &= ~( 1 << 21 ) )
+#define I2C2_PCLK_DI() 			( RCC->APB1ENR &= ~( 1 << 22 ) )
+#define I2C3_PCLK_DI() 			( RCC->APB1ENR &= ~( 1 << 23 ) )
+// Reset I2C peripherals
+#define I2C1_PCLK_RST() 		( RCC->APB1RSTR |= ( 1 << 21 ) )
+#define I2C2_PCLK_RST() 		( RCC->APB1RSTR |= ( 1 << 22 ) )
+#define I2C3_PCLK_RST() 		( RCC->APB1RSTR |= ( 1 << 23 ) )
+
 
 // Includes for protocol-specific header files
 #include "stm32f407xx_i2c_driver.h"

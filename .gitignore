@@ -4,3 +4,4 @@
 STM32F407*.ld
 .metadata
 Debug
+*.launch

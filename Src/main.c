@@ -17,6 +17,9 @@
  */
 
 #include <stdint.h>
+#include <stddef.h>
+
+#include "stm32f407xx.h"
 
 #if !defined(__SOFT_FP__) && defined(__ARM_FP)
   #warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
@@ -24,6 +27,28 @@
 
 int main(void)
 {
+	I2C_Config_t config = {
+			I2C_SPEED_SM,
+			62,
+			I2C_ACK_EN,
+			I2C_FM_DUTY_2
+	};
+
+	I2C_Handle_t p_i2c_handle = {
+			I2C1,
+			config,
+			NULL,
+			NULL,
+			0,
+			0,
+			0,
+			21,
+			0,
+			0
+	};
+
     /* Loop forever */
+	I2C_Init(&p_i2c_handle);
+
 	for(;;);
 }

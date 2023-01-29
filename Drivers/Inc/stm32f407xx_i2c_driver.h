@@ -33,8 +33,8 @@ typedef struct
 } I2C_Handle_t;
 
 // Clock speed options
-#define I2C_SPEED_SM				1000000		// 100kHz clock for standard mode
-#define I2C_SPEED_FM				4000000		// 400kHz clock for fast mode
+#define I2C_SPEED_SM				100000		// 100kHz clock for standard mode
+#define I2C_SPEED_FM				400000		// 400kHz clock for fast mode
 
 // Enable or disable acknowledge bit after data bit
 #define I2C_ACK_EN        			1

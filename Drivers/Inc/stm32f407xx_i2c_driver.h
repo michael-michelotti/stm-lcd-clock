@@ -67,16 +67,18 @@ typedef enum
 } System_Clock_t;
 
 void I2C_Peri_Clk_Ctrl(I2C_Register_Map_t *p_i2c_x, uint8_t enable);
+void I2C_Peripheral_Power_Switch(I2C_Register_Map_t *p_i2c_x, uint8_t on_or_off);
+void I2C_Master_Send(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr,uint8_t sr);
 
 void I2C_Init(I2C_Handle_t *p_i2c_handle);
 /*
 void I2C_Cleanup(I2C_Register_t *p_i2c_x);
 
-void I2C_Peripheral_Power_Switch(I2C_Register_t *p_i2c_x, uint8_t on_or_off);
+
 uint8_t I2C_Get_Flag_Status(I2C_Register_t *p_i2c_x, uint32_t flag_name);
 void I2C_Manage_Acking(I2C_Register_t *p_i2c_x, uint8_t enable);
 
-void I2C_MasterSend(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr,uint8_t sr);
+
 void I2C_MasterReceive(I2C_Handle_t *p_i2c_handle, uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr);
 */
 #endif /* STM32F407XX_I2C_DRIVER_H_ */

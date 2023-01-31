@@ -23,7 +23,7 @@ typedef struct
 
 typedef struct
 {
-	GPIO_Register_t *p_gpio_x;
+	GPIO_Register_Map_t *p_gpio_x;
 	GPIO_Pin_Config_t gpio_pin_config;
 } GPIO_Handle_t;
 
@@ -61,18 +61,17 @@ typedef enum
 
 /* READ FUNCTIONALITY */
 void GPIO_Init(GPIO_Handle_t *p_gpio_handle);
-void GPIO_Cleanup(GPIO_Register_t *p_gpio_x);
-void GPIO_Peri_Clk_Ctrl(GPIO_Register_t *p_gpio_x, uint8_t enable);
-uint8_t GPIO_Read_From_Input_Pin(volatile GPIO_Register_t *p_gpio_x, uint8_t pin_num);
-uint16_t GPIO_Read_From_Input_Port(GPIO_Register_t *p_gpio_x);
+void GPIO_Cleanup(GPIO_Register_Map_t *p_gpio_x);
+void GPIO_Peri_Clk_Ctrl(GPIO_Register_Map_t *p_gpio_x, uint8_t enable);
+uint8_t GPIO_Read_From_Input_Pin(volatile GPIO_Register_Map_t *p_gpio_x, uint8_t pin_num);
+uint16_t GPIO_Read_From_Input_Port(GPIO_Register_Map_t *p_gpio_x);
 
 /* WRITE FUNCTIONALITY */
-void GPIO_Write_To_Output_Pin(GPIO_Register_t *p_gpio_x, uint8_t pin_num, uint8_t value);
-void GPIO_Write_To_Output_Port(GPIO_Register_t *p_gpio_x, uint16_t value);
-void GPIO_Toggle_Pin(GPIO_Register_t *p_gpio_x, uint8_t pin_num);
+void GPIO_Write_To_Output_Pin(GPIO_Register_Map_t *p_gpio_x, uint8_t pin_num, uint8_t value);
+void GPIO_Write_To_Output_Port(GPIO_Register_Map_t *p_gpio_x, uint16_t value);
+void GPIO_Toggle_Pin(GPIO_Register_Map_t *p_gpio_x, uint8_t pin_num);
 
 /* INTERRUPT MANAGEMENT */
-uint8_t exti_gpio_base_addr_to_code(GPIO_Register_t *p_gpio_base_addr);
 void GPIO_IRQ_Interrupt_Config(uint8_t irq_num, uint8_t enable);
 void GPIO_IRQ_Priority_Config(uint8_t irq_num, uint32_t irq_prio);
 void GPIO_IRQ_Handler(uint8_t pin_num);

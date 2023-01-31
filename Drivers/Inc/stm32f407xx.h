@@ -19,6 +19,9 @@
 #define OFF				0
 #define SET				ENABLE
 #define RESET			DISABLE
+#define RISING			0
+#define FALLING			1
+#define NO_PRIORITY_BITS_IMPLEMENTED	4
 
 #define HSI_CLK_SPEED	16000000u
 
@@ -30,6 +33,19 @@
 #define SRAM2_BASE_ADDR 		0x20001C00u
 #define ROM						0x1FFF0000u
 #define SRAM 					SRAM1_BASE_ADDR
+
+// Nested Vector Interrupt Controller, Interrupt enabling (ISER) and disabling (ICER)
+#define NVIC_ISER_0				((volatile uint32_t *)0xE000E100)
+#define NVIC_ISER_1				((volatile uint32_t *)0xE000E104)
+#define NVIC_ISER_2				((volatile uint32_t *)0xE000E108)
+#define NVIC_ISER_3				((volatile uint32_t *)0xE000E10c)
+
+#define NVIC_ICER_0				((volatile uint32_t *)0xE000E180)
+#define NVIC_ICER_1				((volatile uint32_t *)0xE000E184)
+#define NVIC_ICER_2				((volatile uint32_t *)0xE000E188)
+#define NVIC_ICER_3				((volatile uint32_t *)0xE000E18c)
+
+#define NVIC_IPR_0				((volatile uint32_t *)0xE000E400)
 
 // Peripheral bus base addresses
 #define PERIPH_BASE 			0x40000000u
@@ -263,6 +279,19 @@ typedef struct
 #define I2C1_PCLK_RST() 		( RCC->APB1RSTR |= ( 1 << 21 ) )
 #define I2C2_PCLK_RST() 		( RCC->APB1RSTR |= ( 1 << 22 ) )
 #define I2C3_PCLK_RST() 		( RCC->APB1RSTR |= ( 1 << 23 ) )
+
+#define SYSCFG_PCLK_EN()		( RCC->APB2ENR |= ( 1 << 14 ) )
+
+/* Macros to reset GPIO peripherals */
+#define GPIOA_RESET()			do { (RCC->AHB1RSTR |= (1 << 0)); (RCC->AHB1RSTR &= ~(1 << 0)); } while(0)
+#define GPIOB_RESET()			do { (RCC->AHB1RSTR |= (1 << 1)); (RCC->AHB1RSTR &= ~(1 << 1)); } while(0)
+#define GPIOC_RESET()			do { (RCC->AHB1RSTR |= (1 << 2)); (RCC->AHB1RSTR &= ~(1 << 2)); } while(0)
+#define GPIOD_RESET()			do { (RCC->AHB1RSTR |= (1 << 3)); (RCC->AHB1RSTR &= ~(1 << 3)); } while(0)
+#define GPIOE_RESET()			do { (RCC->AHB1RSTR |= (1 << 4)); (RCC->AHB1RSTR &= ~(1 << 4)); } while(0)
+#define GPIOF_RESET()			do { (RCC->AHB1RSTR |= (1 << 5)); (RCC->AHB1RSTR &= ~(1 << 5)); } while(0)
+#define GPIOG_RESET()			do { (RCC->AHB1RSTR |= (1 << 6)); (RCC->AHB1RSTR &= ~(1 << 6)); } while(0)
+#define GPIOH_RESET()			do { (RCC->AHB1RSTR |= (1 << 7)); (RCC->AHB1RSTR &= ~(1 << 7)); } while(0)
+#define GPIOI_RESET()			do { (RCC->AHB1RSTR |= (1 << 8)); (RCC->AHB1RSTR &= ~(1 << 8)); } while(0)
 
 
 // Includes for protocol-specific header files

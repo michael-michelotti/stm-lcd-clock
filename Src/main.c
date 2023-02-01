@@ -27,6 +27,32 @@
 
 int main(void)
 {
+	// configure I2C1 GPIO pins as SCL
+	GPIO_Pin_Config_t scl_config = {
+			6,					// PB6 is I2C1 SCL
+			GPIO_MODE_ALT,
+			GPIO_SPEED_HIGH,
+			GPIO_PUPD_NONE,
+			GPIO_OUT_OD,		// I2C pins must be configured open drain with a pull-up
+			4					// Alt function 4 is SCL on PB6
+	};
+
+	GPIO_Handle_t scl_handle = { GPIOB, scl_config };
+
+	// configure I2C1 GPIO pins as SDA
+	GPIO_Pin_Config_t sda_config = {
+			7,					// PB7 is I2C1 SDA
+			GPIO_MODE_ALT,
+			GPIO_SPEED_HIGH,
+			GPIO_PUPD_NONE,
+			GPIO_OUT_OD,		// I2C pins must be configured open drain with a pull-up
+			4					// Alt function 4 is SDA on PB7
+	};
+	GPIO_Handle_t sda_handle = { GPIOB, sda_config };
+
+	GPIO_Init(&scl_handle);
+	GPIO_Init(&sda_handle);
+
 	I2C_Config_t config = {
 			I2C_SPEED_SM,
 			62,

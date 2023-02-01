@@ -19,6 +19,8 @@
 #define OFF				0
 #define SET				ENABLE
 #define RESET			DISABLE
+#define READ			0
+#define WRITE			1
 #define RISING			0
 #define FALLING			1
 #define NO_PRIORITY_BITS_IMPLEMENTED	4
@@ -229,6 +231,9 @@ typedef struct
 #define I2C_SR1_OVR 					11		// Over/underrun; incoming byte was lost or duplicate byte was sent
 #define I2C_SR1_TIMEOUT 				14		// Clock line was stretched low too long; master will generate stop condition
 
+#define I2C_SR1_CHECK					0
+#define I2C_SR2_CHECK					1
+
 // I2C_SR2 bit positions - General status register
 #define I2C_SR2_MSL						0		// Whether board is in master or slave mode
 #define I2C_SR2_BUSY 					1		// Bus busy
@@ -297,5 +302,6 @@ typedef struct
 // Includes for protocol-specific header files
 #include "stm32f407xx_i2c_driver.h"
 #include "stm32f407xx_rcc_driver.h"
+#include "stm32f407xx_gpio_driver.h"
 
 #endif /* STM32F407XX_H_ */

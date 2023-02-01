@@ -19,8 +19,8 @@
 #define OFF				0
 #define SET				ENABLE
 #define RESET			DISABLE
-#define READ			0
-#define WRITE			1
+#define I2C_WRITE		0
+#define I2C_READ		1
 #define RISING			0
 #define FALLING			1
 #define NO_PRIORITY_BITS_IMPLEMENTED	4

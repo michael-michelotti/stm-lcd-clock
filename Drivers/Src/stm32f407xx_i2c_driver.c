@@ -7,6 +7,8 @@
 
 #include "stm32f407xx_i2c_driver.h"
 #include "stm32f407xx_rcc_driver.h"
+#include "stm32f407xx_gpio_driver.h"
+#include <stdio.h>
 
 static void Manage_Acking(I2C_Register_Map_t *p_i2c_x, uint8_t enable);
 static void Configure_I2C_Clock_Mode(I2C_Handle_t *p_i2c_handle);
@@ -52,11 +54,86 @@ void I2C_Peri_Clk_Ctrl(I2C_Register_Map_t *p_i2c_x, uint8_t enable)
 	}
 }
 
+void I2C_Errata_Reset(I2C_Handle_t *p_i2c_handle)
+{
+	/**
+	1. Disable the I2C peripheral by clearing the PE bit in I2Cx_CR1 register.
+	2. Configure the SCL and SDA I/Os as General Purpose Output Open-Drain, High level
+	(Write 1 to GPIOx_ODR).
+	3. Check SCL and SDA High level in GPIOx_IDR.
+	4. Configure the SDA I/O as General Purpose Output Open-Drain, Low level (Write 0 to
+	GPIOx_ODR).
+	5. Check SDA Low level in GPIOx_IDR.
+	6. Configure the SCL I/O as General Purpose Output Open-Drain, Low level (Write 0 to
+	GPIOx_ODR).
+	7. Check SCL Low level in GPIOx_IDR.
+	8. Configure the SCL I/O as General Purpose Output Open-Drain, High level (Write 1 to
+	GPIOx_ODR).
+	9. Check SCL High level in GPIOx_IDR.
+	10. Configure the SDA I/O as General Purpose Output Open-Drain , High level (Write 1 to
+	GPIOx_ODR).
+	11. Check SDA High level in GPIOx_IDR.
+	12. Configure the SCL and SDA I/Os as Alternate function Open-Drain.
+	13. Set SWRST bit in I2Cx_CR1 register.
+	14. Clear SWRST bit in I2Cx_CR1 register.
+	15. Enable the I2C peripheral by setting the PE bit in I2Cx_CR1 register.
+	**/
+	// PB11 is SDA, PB10 is SCL
+	I2C_Peripheral_Power_Switch(p_i2c_handle->p_i2c_x, OFF);
+	uint8_t dummy_val = 0;
+
+	GPIO_Pin_Config_t errata_config = {
+			10,
+			GPIO_MODE_OUT,
+			GPIO_SPEED_HIGH,
+			GPIO_PUPD_NONE,
+			GPIO_OUT_OD,
+			0
+	};
+	GPIO_Handle_t errata_handle = { GPIOB, errata_config };
+	GPIO_Init(&errata_handle);
+	errata_handle.gpio_pin_config.gpio_pin_num = 11;
+	GPIO_Init(&errata_handle);
+	GPIO_Write_To_Output_Pin(errata_handle.p_gpio_x, 10, 1);
+	GPIO_Write_To_Output_Pin(errata_handle.p_gpio_x, 11, 1);
+	dummy_val = GPIO_Read_From_Input_Pin(errata_handle.p_gpio_x, 10);
+	dummy_val = GPIO_Read_From_Input_Pin(errata_handle.p_gpio_x, 11);
+
+	GPIO_Write_To_Output_Pin(errata_handle.p_gpio_x, 11, 0);
+	dummy_val = GPIO_Read_From_Input_Pin(errata_handle.p_gpio_x, 11);
+
+	GPIO_Write_To_Output_Pin(errata_handle.p_gpio_x, 10, 0);
+	dummy_val = GPIO_Read_From_Input_Pin(errata_handle.p_gpio_x, 10);
+
+	GPIO_Write_To_Output_Pin(errata_handle.p_gpio_x, 10, 1);
+	dummy_val = GPIO_Read_From_Input_Pin(errata_handle.p_gpio_x, 10);
+
+	GPIO_Write_To_Output_Pin(errata_handle.p_gpio_x, 11, 1);
+	dummy_val = GPIO_Read_From_Input_Pin(errata_handle.p_gpio_x, 11);
+
+	errata_handle.gpio_pin_config.gpio_pin_mode = GPIO_MODE_ALT;
+	errata_handle.gpio_pin_config.gpio_pin_alt_fun_mode = 4;
+	GPIO_Init(&errata_handle);
+	errata_handle.gpio_pin_config.gpio_pin_num = 10;
+	GPIO_Init(&errata_handle);
+	p_i2c_handle->p_i2c_x->CR1 |= (1 << I2C_CR1_SWRST);
+	p_i2c_handle->p_i2c_x->CR1 &= ~(1 << I2C_CR1_SWRST);
+	// I2C_Peripheral_Power_Switch(p_i2c_handle->p_i2c_x, ON);
+}
+
 void I2C_Init(I2C_Handle_t *p_i2c_handle)
 {
 	// CLOCK CONFIGURATION
 	// enable peripheral clock
 	I2C_Peri_Clk_Ctrl(p_i2c_handle->p_i2c_x, ENABLE);
+
+	// I2C_Errata_Reset(p_i2c_handle);
+
+	/*
+	// try a SW reset - busy bit seems to stay set???
+	p_i2c_handle->p_i2c_x->CR1 |= (1 << I2C_CR1_SWRST);
+	while(p_i2c_handle->p_i2c_x->CR1 & (1 << I2C_CR1_SWRST));
+	 */
 
 	// configure frequency and CCR
 	Configure_I2C_Clock_Mode(p_i2c_handle);
@@ -98,18 +175,34 @@ static uint8_t I2C_Check_Status_Flag(I2C_Handle_t *p_i2c_handle, uint8_t flag_nu
 	// 0 = SR1, 1 = SR2
 	if (!sr_1_or_2)
 	{
-		return (p_i2c_handle->p_i2c_x->SR1 >> flag_num) & 1;
+		if (p_i2c_handle->p_i2c_x->SR1 & (1 << flag_num))
+		{
+			return SET;
+		}
+		else
+		{
+			return RESET;
+		}
+		// return ((p_i2c_handle->p_i2c_x->SR1 >> flag_num) & 1);
 	}
 	else
 	{
-		return (p_i2c_handle->p_i2c_x->SR2 >> flag_num) & 1;
+		if (p_i2c_handle->p_i2c_x->SR2 & (1 << flag_num))
+		{
+			return SET;
+		}
+		else
+		{
+			return RESET;
+		}
+		// return (p_i2c_handle->p_i2c_x->SR2 >> flag_num) & 1;
 	}
 }
 
 static void I2C_Write_Address_Byte(I2C_Handle_t *p_i2c_handle, uint8_t slave_addr, uint8_t read_or_write)
 {
 	slave_addr <<= 1;
-	// 0 for read, 1 for write
+	// 0 for write, 1 for read
 	if (!read_or_write)
 	{
 		slave_addr &= ~1;
@@ -134,13 +227,13 @@ void I2C_Master_Send(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint32_t 
 
 	// 3) After receiving ACK from slave, event EV6. ADDR bit set high (meaning address was matched)
 	// check ADDR flag in SR1, then check TRA flag in SR2 to verify we are configured as transmitter
-	I2C_Write_Address_Byte(p_i2c_handle, slave_addr, WRITE);
+	I2C_Write_Address_Byte(p_i2c_handle, slave_addr, I2C_WRITE);
 	while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_ADDR, I2C_SR1_CHECK));
 
 	if (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR2_TRA, I2C_SR2_CHECK))
 	{
 		// we are configured as receiver, which is wrong. just return
-		return;
+		// return;
 	}
 
 	while (len > 0)
@@ -155,8 +248,8 @@ void I2C_Master_Send(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint32_t 
 
 	// 6) After every byte has been sent, generate the stop condition
 	// once length becomes 0, wait for txe=1 and btf=1, then generate stop condition
-	while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_FLAG_TXE, I2C_SR1_CHECK));
-	while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_FLAG_BTF, I2C_SR1_CHECK));
+	while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_TXE, I2C_SR1_CHECK));
+	while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_BTF, I2C_SR1_CHECK));
 	I2C_Generate_Stop_Condition(p_i2c_handle);
 }
 
@@ -205,6 +298,8 @@ static void Configure_I2C_Clock_Mode(I2C_Handle_t *p_i2c_handle)
 		// set I2C_CCR to 80 (value for standard mode)
 		Set_I2C_CCR(p_i2c_handle, pclk_freq);
 	}
+
+	Set_I2C_CCR(p_i2c_handle, pclk_freq);
 
 	Configure_I2C_TRISE(p_i2c_handle, pclk_freq);
 }
@@ -278,6 +373,9 @@ static void I2C_Set_Own_Address(I2C_Handle_t *p_i2c_handle)
 	// clear 7-bit address field, then set address
 	p_i2c_handle->p_i2c_x->OAR1 &= ~(0x7F << 1);
 	p_i2c_handle->p_i2c_x->OAR1 |= (p_i2c_handle->i2c_config.dev_addr << 1);
+
+	// 14th bit must be kept high
+	p_i2c_handle->p_i2c_x->OAR1 |= (1 << 14);
 }
 
 static uint32_t Get_Peri_Clk_Frequency()
@@ -285,15 +383,15 @@ static uint32_t Get_Peri_Clk_Frequency()
 	System_Clock_t sys_clk = RCC->CFGR &= (0b11 << RCC_CFGR_SWS);
 	switch (sys_clk)
 	{
-	case SYS_CLK_HSI:
-		return HSI_CLK_SPEED;
-	case SYS_CLK_HSE:
-		// TODO: implement logic for HSE and PLL
-		return 0;
-	case SYS_CLK_PLL:
-		return 0;
-	default:
-		return 0;
+		case SYS_CLK_HSI:
+			return HSI_CLK_SPEED;
+		case SYS_CLK_HSE:
+			// TODO: implement logic for HSE and PLL
+			return 0;
+		case SYS_CLK_PLL:
+			return 0;
+		default:
+			return 0;
 	}
 }
 
@@ -302,12 +400,12 @@ static uint32_t Translate_APB_Prescaler(uint8_t bit_value)
 	// APB1 AND APB2 PRESCALER
 	switch (bit_value)
 	{
-	case 0b000 ... 0b011: return 1;
-	case 0b100: return 2;
-	case 0b101: return 4;
-	case 0b110: return 8;
-	case 0b111: return 16;
-	default: return -1;
+		case 0b000 ... 0b011: return 1;
+		case 0b100: return 2;
+		case 0b101: return 4;
+		case 0b110: return 8;
+		case 0b111: return 16;
+		default: return -1;
 	}
 
 }
@@ -317,16 +415,16 @@ static uint32_t Translate_AHB_Prescaler(uint8_t bit_value)
 	// AHB PRESCALER
 	switch (bit_value)
 	{
-	case 0b0000 ... 0b0111: return 1;
-	case 0b1000: return 2;
-	case 0b1001: return 4;
-	case 0b1010: return 8;
-	case 0b1011: return 16;
-	case 0b1100: return 64;
-	case 0b1101: return 128;
-	case 0b1110: return 256;
-	case 0b1111: return 512;
-	default: return -1;
+		case 0b0000 ... 0b0111: return 1;
+		case 0b1000: return 2;
+		case 0b1001: return 4;
+		case 0b1010: return 8;
+		case 0b1011: return 16;
+		case 0b1100: return 64;
+		case 0b1101: return 128;
+		case 0b1110: return 256;
+		case 0b1111: return 512;
+		default: return -1;
 	}
 }
 

@@ -11,7 +11,7 @@
 static void GPIO_Configure_Mode(GPIO_Handle_t *p_gpio_handle)
 {
 	// clear mode bits for proper GPIO pin
-	p_gpio_handle->p_gpio_x->MODER &= ( 0b11 << (2 * p_gpio_handle->gpio_pin_config.gpio_pin_num) );
+	p_gpio_handle->p_gpio_x->MODER &= ~( 0b11 << (2 * p_gpio_handle->gpio_pin_config.gpio_pin_num) );
 	// set mode bits properly
 	p_gpio_handle->p_gpio_x->MODER |= ( p_gpio_handle->gpio_pin_config.gpio_pin_mode << (2 * p_gpio_handle->gpio_pin_config.gpio_pin_num) );
 }

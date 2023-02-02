@@ -85,24 +85,6 @@ int main(void)
     /* Loop forever */
 	I2C_Init(&p_i2c_handle);
 
-	/*
-	// delay while i wait for button press from user
-	// configure I2C1 GPIO pins as SCL
-	GPIO_Pin_Config_t btn_config = {
-			9,					// PB9 used as button input
-			GPIO_MODE_IN,
-			GPIO_SPEED_HIGH,
-			GPIO_PUPD_PU,
-			GPIO_OUT_OD,		// Open drain is fine, no output high
-			0					// No need for alternate function
-	};
-
-	GPIO_Handle_t btn_handle = { GPIOB, btn_config };
-	GPIO_Init(&btn_handle);
-	// hang in loop until button is pressed (IDR value for PB9 is 0)
-	// while((btn_handle.p_gpio_x->IDR >> 9) & 1);
-	 */
-
 	// want to try to write a control byte to address 0E, and see whether the RTC acks
 	// write the value 0x06, which will set the register pointer on the RTC
 	// request a byte, which should send me a year, where the first 4 bits are the year
@@ -113,7 +95,6 @@ int main(void)
 
 	// write 0 back into register pointer
 	I2C_Master_Send(&p_i2c_handle, p_tx_buffer, 1, ds3231_slave_addr, I2C_ENABLE_SR);
-	DS3231_Time_t my_time;
 	uint8_t p_rx_buffer[64];
 	// I2C_Generate_Start_Condition(&p_i2c_handle);
 	I2C_Master_Receive(&p_i2c_handle, p_rx_buffer, 7, ds3231_slave_addr, I2C_DISABLE_SR);

@@ -13,13 +13,12 @@
 /*************** PRIVATE UTILITY FUNCTION DECLARATIONS*****************/
 static uint8_t I2C_Check_Status_Flag(I2C_Handle_t *p_i2c_handle, uint8_t flag_num, uint8_t sr_1_or_2);
 static void I2C_Write_Address_Byte(I2C_Handle_t *p_i2c_handle, uint8_t slave_addr, uint8_t read_or_write);
-static void Manage_Acking(I2C_Register_Map_t *p_i2c_x, uint8_t enable);
-static void Configure_I2C_Clock_Mode(I2C_Handle_t *p_i2c_handle);
-static void Set_I2C_CR2_Freq(I2C_Register_Map_t *p_i2c_x, uint32_t freq);
-static void Set_I2C_CCR(I2C_Handle_t *p_i2c_handle, uint32_t pclk_freq);
-static void Configure_I2C_TRISE(I2C_Handle_t *p_i2c_handle, uint32_t pclk_freq);
+static void I2C_Ack_Control(I2C_Register_Map_t *p_i2c_x, uint8_t enable);
+static void I2C_Configure_Clock_Registers(I2C_Handle_t *p_i2c_handle);
+static void I2C_Set_CR2_Freq(I2C_Register_Map_t *p_i2c_x, uint32_t sys_clk_freq);
+static void I2C_Set_CCR(I2C_Handle_t *p_i2c_handle, uint32_t sys_clk_freq);
+static void I2C_Configure_TRISE(I2C_Handle_t *p_i2c_handle, uint32_t sys_clk_freq);
 static void I2C_Set_Own_Address(I2C_Handle_t *p_i2c_handle);
-static uint32_t Get_Peri_Clk_Frequency();
 static uint32_t Translate_AHB_Prescaler(uint8_t bit_value);
 static uint32_t Translate_APB_Prescaler(uint8_t bit_value);
 
@@ -51,7 +50,7 @@ void I2C_Init(I2C_Handle_t *p_i2c_handle)
 	I2C_Peri_Clk_Ctrl(p_i2c_handle->p_i2c_x, ENABLE);
 
 	// configure frequency and CCR
-	Configure_I2C_Clock_Mode(p_i2c_handle);
+	I2C_Configure_Clock_Registers(p_i2c_handle);
 
 	// CR1 AND CR2 CONFIGURATION
 	I2C_Set_Own_Address(p_i2c_handle);
@@ -62,11 +61,11 @@ void I2C_Init(I2C_Handle_t *p_i2c_handle)
 	// Ack bit must be set after peripheral is enabled
 	if (p_i2c_handle->i2c_config.ack_ctrl == I2C_ACK_EN)
 	{
-		Manage_Acking(p_i2c_handle->p_i2c_x, ENABLE);
+		I2C_Ack_Control(p_i2c_handle->p_i2c_x, ENABLE);
 	}
 	else
 	{
-		Manage_Acking(p_i2c_handle->p_i2c_x, DISABLE);
+		I2C_Ack_Control(p_i2c_handle->p_i2c_x, DISABLE);
 	}
 }
 
@@ -134,7 +133,7 @@ void I2C_Master_Receive(I2C_Handle_t *p_i2c_handle, uint8_t *p_rx_buffer, uint32
 	if (len == 1)
 	{
 		// NACK must be sent on first byte
-		Manage_Acking(p_i2c_handle->p_i2c_x, DISABLE);
+		I2C_Ack_Control(p_i2c_handle->p_i2c_x, DISABLE);
 		while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_RXNE, I2C_SR1_CHECK));
 		I2C_Generate_Stop_Condition(p_i2c_handle);
 		*p_rx_buffer = p_i2c_handle->p_i2c_x->DR;
@@ -148,7 +147,7 @@ void I2C_Master_Receive(I2C_Handle_t *p_i2c_handle, uint8_t *p_rx_buffer, uint32
 			if (len == 2)
 			{
 				// last byte when len = 1 must be NACK'd, so ACK must be disabled
-				Manage_Acking(p_i2c_handle->p_i2c_x, DISABLE);
+				I2C_Ack_Control(p_i2c_handle->p_i2c_x, DISABLE);
 				I2C_Generate_Stop_Condition(p_i2c_handle);
 			}
 			*p_rx_buffer = p_i2c_handle->p_i2c_x->DR;
@@ -159,7 +158,7 @@ void I2C_Master_Receive(I2C_Handle_t *p_i2c_handle, uint8_t *p_rx_buffer, uint32
 
 	if (p_i2c_handle->i2c_config.ack_ctrl == I2C_ACK_EN)
 	{
-		Manage_Acking(p_i2c_handle->p_i2c_x, ENABLE);
+		I2C_Ack_Control(p_i2c_handle->p_i2c_x, ENABLE);
 	}
 }
 
@@ -203,7 +202,7 @@ static void I2C_Write_Address_Byte(I2C_Handle_t *p_i2c_handle, uint8_t slave_add
 	p_i2c_handle->p_i2c_x->DR = slave_addr;
 }
 
-static void Manage_Acking(I2C_Register_Map_t *p_i2c_x, uint8_t enable)
+static void I2C_Ack_Control(I2C_Register_Map_t *p_i2c_x, uint8_t enable)
 {
 	if (enable == ENABLE)
 	{
@@ -215,74 +214,62 @@ static void Manage_Acking(I2C_Register_Map_t *p_i2c_x, uint8_t enable)
 	}
 }
 
-static void Configure_I2C_Clock_Mode(I2C_Handle_t *p_i2c_handle)
+static void I2C_Configure_Clock_Registers(I2C_Handle_t *p_i2c_handle)
 {
-	uint32_t pclk_freq = Get_Peri_Clk_Frequency();
+	uint32_t sys_clk_freq = RCC_Get_Sys_Clk_Frequency();
 
 	// set FREQ field in I2C_CR2
-	Set_I2C_CR2_Freq(p_i2c_handle->p_i2c_x, pclk_freq);
+	I2C_Set_CR2_Freq(p_i2c_handle->p_i2c_x, sys_clk_freq);
 
 	if (p_i2c_handle->i2c_config.scl_speed <= I2C_SPEED_SM)
 	{
-		// clear F/S bit
+		// cleared F/S bit means Standard Mode I2C
 		p_i2c_handle->p_i2c_x->CCR &= ~(1 << I2C_CCR_FS);
-		// set I2C_CCR to 80 (value for standard mode)
-		Set_I2C_CCR(p_i2c_handle, pclk_freq);
+		I2C_Set_CCR(p_i2c_handle, sys_clk_freq);
 	}
 	else
 	{
-		// set F/S bit
+		// Set F/S bit means Fast Mode
 		p_i2c_handle->p_i2c_x->CCR |= (1 << I2C_CCR_FS);
-		// set I2C_CCR to 80 (value for standard mode)
-		Set_I2C_CCR(p_i2c_handle, pclk_freq);
+		I2C_Set_CCR(p_i2c_handle, sys_clk_freq);
 	}
 
-	Set_I2C_CCR(p_i2c_handle, pclk_freq);
+	I2C_Set_CCR(p_i2c_handle, sys_clk_freq);
 
-	Configure_I2C_TRISE(p_i2c_handle, pclk_freq);
+	I2C_Configure_TRISE(p_i2c_handle, sys_clk_freq);
 }
 
-static void Set_I2C_CR2_Freq(I2C_Register_Map_t *p_i2c_x, uint32_t freq)
+static void I2C_Set_CR2_Freq(I2C_Register_Map_t *p_i2c_x, uint32_t sys_clk_freq)
 {
 	// convert frequency from Hz to MHz
-	freq /= 1000000u;
+	sys_clk_freq /= 1000000u;
 	// 5 bit frequency means maximum of 31
-	if (freq > 31)
+	if (sys_clk_freq > 31)
 		return;
 	// clear first 5 bits of CR2, then apply freq value
 	p_i2c_x->CR2 &= ~0x1F;
-	p_i2c_x->CR2 |= freq;
+	p_i2c_x->CR2 |= sys_clk_freq;
 }
 
-static void Set_I2C_CCR(I2C_Handle_t *p_i2c_handle, uint32_t pclk_freq)
+static void I2C_Set_CCR(I2C_Handle_t *p_i2c_handle, uint32_t sys_clk_freq)
 {
+	// all I2C peripherals on APB1 - calculate APB1 frequency
 	uint32_t ccr;
-	// look up values in apb and ahb prescaler fields, needs to be translated
-	uint32_t ahb_prescaler = (RCC->CFGR >> RCC_CFGR_HPRE) & 0b1111;
-	uint32_t apb1_prescaler = (RCC->CFGR >> RCC_CFGR_PPRE1) & 0b111;
-	ahb_prescaler = Translate_AHB_Prescaler(ahb_prescaler);
-	apb1_prescaler = Translate_APB_Prescaler(apb1_prescaler);
-
-	// do clock division
-	uint32_t apb1_clk = pclk_freq / ahb_prescaler / apb1_prescaler;
+	uint32_t ahb_prescaler = RCC_Get_AHB_Prescaler(ahb_prescaler);
+	uint32_t apb1_prescaler = RCC_Get_APB_Prescaler(apb1_prescaler);
+	uint32_t apb1_clk = sys_clk_freq / ahb_prescaler / apb1_prescaler;
 
 	if (p_i2c_handle->i2c_config.scl_speed <= I2C_SPEED_SM)
-	{
-		// calculate ccr for standard mode
 		ccr = apb1_clk / (I2C_SPEED_SM * 2);
-	}
 	else
-	{
-		// calculate ccr for fast mode
 		ccr = apb1_clk / (I2C_SPEED_FM * 3);
-	}
 
-	// clear bottom 12 bits, then set bottom 12 to CCR
-	p_i2c_handle->p_i2c_x->CCR &= ~(0x0FFF);
+	// clear bottom 12 bits, then set bottom 12 to calculated CCR
+	p_i2c_handle->p_i2c_x->CCR &= ~(0xFFF);
 	p_i2c_handle->p_i2c_x->CCR |= ccr;
 }
 
-static void Configure_I2C_TRISE(I2C_Handle_t *p_i2c_handle, uint32_t pclk_freq)
+static void I2C_Configure_TRISE(I2C_Handle_t *p_i2c_handle, uint32_t sys_clk_freq)
 {
 	uint8_t trise;
 
@@ -290,16 +277,15 @@ static void Configure_I2C_TRISE(I2C_Handle_t *p_i2c_handle, uint32_t pclk_freq)
 	{
 		// mode is standard - TRISE is (max rise time * apb1 clock) + 1
 		// max rise time is 1000ns = 1e-6, simplifies to (apb1 clock / 1e6) + 1
-		trise = (pclk_freq / 1000000u) + 1;
+		trise = (sys_clk_freq / 1000000u) + 1;
 	}
 	else
 	{
-		// mode is fast - max rise time is 300ns
-		// simplifies to (apb1 clock * 3 / 1e7) + 1
-		trise = ( (pclk_freq * 3) / 10000000u ) + 1;
+		// mode is fast - max rise time is 300ns - simplifies to (apb1 clock * 3 / 1e7) + 1
+		trise = ( (sys_clk_freq * 3) / 10000000u ) + 1;
 	}
 
-	// set TRISE in I2C_TRISE register - clear bits first
+	// clear bottom 5 bits of I2C_TRISE register, then set to calculated value
 	p_i2c_handle->p_i2c_x->TRISE &= ~(0x1F);
 	p_i2c_handle->p_i2c_x->TRISE |= trise;
 }
@@ -314,55 +300,5 @@ static void I2C_Set_Own_Address(I2C_Handle_t *p_i2c_handle)
 
 	// 14th bit must be kept high
 	p_i2c_handle->p_i2c_x->OAR1 |= (1 << 14);
-}
-
-static uint32_t Get_Peri_Clk_Frequency()
-{
-	System_Clock_t sys_clk = RCC->CFGR &= (0b11 << RCC_CFGR_SWS);
-	switch (sys_clk)
-	{
-		case SYS_CLK_HSI:
-			return HSI_CLK_SPEED;
-		case SYS_CLK_HSE:
-			// TODO: implement logic for HSE and PLL
-			return 0;
-		case SYS_CLK_PLL:
-			return 0;
-		default:
-			return 0;
-	}
-}
-
-static uint32_t Translate_APB_Prescaler(uint8_t bit_value)
-{
-	// APB1 AND APB2 PRESCALER
-	switch (bit_value)
-	{
-		case 0b000 ... 0b011: return 1;
-		case 0b100: return 2;
-		case 0b101: return 4;
-		case 0b110: return 8;
-		case 0b111: return 16;
-		default: return -1;
-	}
-
-}
-
-static uint32_t Translate_AHB_Prescaler(uint8_t bit_value)
-{
-	// AHB PRESCALER
-	switch (bit_value)
-	{
-		case 0b0000 ... 0b0111: return 1;
-		case 0b1000: return 2;
-		case 0b1001: return 4;
-		case 0b1010: return 8;
-		case 0b1011: return 16;
-		case 0b1100: return 64;
-		case 0b1101: return 128;
-		case 0b1110: return 256;
-		case 0b1111: return 512;
-		default: return -1;
-	}
 }
 

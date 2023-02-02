@@ -16,15 +16,51 @@ uint8_t DS3231_Get_Seconds(I2C_Handle_t *p_i2c_handle)
 
 	// write seconds register into register pointer
 	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 1, DS3231_SLAVE_ADDR, I2C_ENABLE_SR);
-
 	// read one byte
 	I2C_Master_Receive(p_i2c_handle, p_rx_buffer, 1, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
 
 	return Convert_BCD_To_Binary(*p_rx_buffer);
 }
 
-void DS3231_Get_Minutes();
-void DS3231_Get_Hours();
+uint8_t DS3231_Get_Minutes(I2C_Handle_t *p_i2c_handle)
+{
+	uint8_t p_tx_buffer[1] = { DS3231_MINUTES };
+	uint8_t p_rx_buffer[1];
+
+	// write seconds register into register pointer
+	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 1, DS3231_SLAVE_ADDR, I2C_ENABLE_SR);
+	// read one byte
+	I2C_Master_Receive(p_i2c_handle, p_rx_buffer, 1, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
+
+	return Convert_BCD_To_Binary(*p_rx_buffer);
+}
+
+DS3231_Hours_t DS3231_Get_Hours(I2C_Handle_t *p_i2c_handle)
+{
+	uint8_t p_tx_buffer[1] = { DS3231_HOURS };
+	uint8_t p_rx_buffer[1];
+	uint8_t hour_buffer;
+	uint8_t hour_tens;
+	DS3231_Hours_t hour_struct;
+
+	// write seconds register into register pointer
+	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 1, DS3231_SLAVE_ADDR, I2C_ENABLE_SR);
+	// read one byte
+	I2C_Master_Receive(p_i2c_handle, p_rx_buffer, 1, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
+
+	hour_buffer = *p_rx_buffer;
+	hour_struct.hour_12_24 = (hour_buffer >> DS3231_12_24_BIT) & 1;
+
+	if (hour_struct.hour_12_24 == DS3231_12_HOUR)
+		hour_struct.am_pm = (hour_buffer >> DS3231_AM_PM_BIT) & 1;
+
+	// convert hour BCD to binary
+	hour_tens = (hour_buffer >> 4) & 1;
+	hour_struct.hour = (hour_buffer & 0xF) + (hour_tens * 10);
+
+	return hour_struct;
+}
+
 void DS3231_Get_Day();
 void DS3231_Get_Date();
 void DS3231_Get_Month();

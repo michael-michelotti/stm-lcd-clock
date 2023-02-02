@@ -50,8 +50,6 @@ int main(void)
 			4					// Alt function 4 is SCL on PB6
 	};
 
-	printf("Print Test 1\n");
-
 	GPIO_Handle_t scl_handle = { GPIOB, scl_config };
 
 	// configure I2C1 GPIO pins as SDA
@@ -69,27 +67,12 @@ int main(void)
 	GPIO_Init(&sda_handle);
 
 	I2C_Config_t config = {I2C_SPEED_SM, 62, I2C_ACK_EN, I2C_FM_DUTY_2};
-
-	I2C_Handle_t p_i2c_handle = {
-			I2C2,
-			config,
-			NULL,
-			NULL,
-			0,
-			0,
-			0,
-			21,
-			0,
-			0
-	};
-
-    /* Loop forever */
+	I2C_Handle_t p_i2c_handle = {I2C2, config, NULL, NULL, 0, 0, 0, 21, 0, 0};
 	I2C_Init(&p_i2c_handle);
 
 	uint8_t seconds = DS3231_Get_Seconds(&p_i2c_handle);
+	uint8_t minutes = DS3231_Get_Minutes(&p_i2c_handle);
+	DS3231_Hours_t hours = DS3231_Get_Hours(&p_i2c_handle);
 
-	for(;;)
-	{
-
-	}
+	for(;;);
 }

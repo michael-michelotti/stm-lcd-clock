@@ -34,6 +34,9 @@
 
 #define DS3231_SLAVE_ADDR			0b1101000
 
+#define DS3231_AM_PM_BIT			5
+#define DS3231_12_24_BIT			6
+
 typedef struct
 {
 	uint8_t seconds;
@@ -66,9 +69,22 @@ typedef enum
 	DS3231_12_HOUR
 } DS3231_12_24_Hour_t;
 
+typedef enum
+{
+	DS3231_AM,
+	DS3231_PM
+} DS3231_AM_PM_t;
+
+typedef struct
+{
+	DS3231_12_24_Hour_t 	hour_12_24;
+	DS3231_AM_PM_t			am_pm;
+	uint8_t					hour;
+} DS3231_Hours_t;
+
 uint8_t DS3231_Get_Seconds(I2C_Handle_t *p_i2c_handle);
-void DS3231_Get_Minutes();
-void DS3231_Get_Hours();
+uint8_t DS3231_Get_Minutes(I2C_Handle_t *p_i2c_handle);
+DS3231_Hours_t DS3231_Get_Hours(I2C_Handle_t *p_i2c_handle);
 void DS3231_Get_Day();
 void DS3231_Get_Date();
 void DS3231_Get_Month();

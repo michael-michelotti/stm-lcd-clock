@@ -61,9 +61,78 @@ DS3231_Hours_t DS3231_Get_Hours(I2C_Handle_t *p_i2c_handle)
 	return hour_struct;
 }
 
-void DS3231_Get_Day();
-void DS3231_Get_Date();
-void DS3231_Get_Month();
+DS3231_DOW_t DS3231_Get_Day_Of_Week(I2C_Handle_t *p_i2c_handle)
+{
+	uint8_t p_tx_buffer[1] = { DS3231_DAY };
+	uint8_t p_rx_buffer[1];
+
+	// write seconds register into register pointer
+	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 1, DS3231_SLAVE_ADDR, I2C_ENABLE_SR);
+	// read one byte
+	I2C_Master_Receive(p_i2c_handle, p_rx_buffer, 1, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
+
+	return *p_rx_buffer & 0x7;
+}
+
+uint8_t DS3231_Get_Date(I2C_Handle_t *p_i2c_handle)
+{
+	uint8_t p_tx_buffer[1] = { DS3231_DATE };
+	uint8_t p_rx_buffer[1];
+
+	// write seconds register into register pointer
+	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 1, DS3231_SLAVE_ADDR, I2C_ENABLE_SR);
+	// read one byte
+	I2C_Master_Receive(p_i2c_handle, p_rx_buffer, 1, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
+
+	// TODO: Possibly update BCD function to include how many bits for 10s place
+	uint8_t date_buffer = *p_rx_buffer;
+	// zeroes place seconds (bottom 4 bits)
+	uint8_t zeroes_place = date_buffer & 0xF;
+	// tens place seconds (bits 4-5)
+	uint8_t tens_place = (date_buffer >> 4)& 0x3;
+	return zeroes_place + (tens_place * 10);
+}
+
+uint8_t DS3231_Get_Month(I2C_Handle_t *p_i2c_handle)
+{
+	uint8_t p_tx_buffer[1] = { DS3231_MONTH_CENTURY };
+	uint8_t p_rx_buffer[1];
+
+	// write seconds register into register pointer
+	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 1, DS3231_SLAVE_ADDR, I2C_ENABLE_SR);
+	// read one byte
+	I2C_Master_Receive(p_i2c_handle, p_rx_buffer, 1, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
+
+	// TODO: Possibly update BCD function to include how many bits for 10s place
+	uint8_t month_buffer = *p_rx_buffer;
+	// zeroes place seconds (bottom 4 bits)
+	uint8_t zeroes_place = month_buffer & 0xF;
+	// tens place seconds (bit 4)
+	uint8_t tens_place = (month_buffer >> 4)& 0x1;
+	return zeroes_place + (tens_place * 10);
+}
+
+uint8_t DS3231_Get_Century(I2C_Handle_t *p_i2c_handle)
+{
+	uint8_t p_tx_buffer[1] = { DS3231_MONTH_CENTURY };
+	uint8_t p_rx_buffer[1];
+
+	// write seconds register into register pointer
+	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 1, DS3231_SLAVE_ADDR, I2C_ENABLE_SR);
+	// read one byte
+	I2C_Master_Receive(p_i2c_handle, p_rx_buffer, 1, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
+
+	return (*p_rx_buffer) >> 7;
+}
+
+DS3231_Month_Century_t DS3231_Get_Month_Century(I2C_Handle_t *p_i2c_handle)
+{
+	DS3231_Month_Century_t m_c_struct;
+	m_c_struct.month = DS3231_Get_Month(p_i2c_handle);
+	m_c_struct.century = DS3231_Get_Century(p_i2c_handle);
+	return m_c_struct;
+}
+
 void DS3231_Get_Year();
 
 void DS3231_Get_Full_Date();

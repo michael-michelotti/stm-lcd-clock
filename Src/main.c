@@ -45,7 +45,7 @@ int main(void)
 			10,					// PB8 is I2C1 SCL
 			GPIO_MODE_ALT,
 			GPIO_SPEED_HIGH,
-			GPIO_PUPD_PU,
+			GPIO_PUPD_NONE,
 			GPIO_OUT_OD,		// I2C pins must be configured open drain with a pull-up
 			4					// Alt function 4 is SCL on PB6
 	};
@@ -57,7 +57,7 @@ int main(void)
 			11,					// PB7 is I2C1 SDA
 			GPIO_MODE_ALT,
 			GPIO_SPEED_HIGH,
-			GPIO_PUPD_PU,
+			GPIO_PUPD_NONE,
 			GPIO_OUT_OD,		// I2C pins must be configured open drain with a pull-up
 			4					// Alt function 4 is SDA on PB7
 	};
@@ -73,6 +73,7 @@ int main(void)
 	uint8_t seconds = DS3231_Get_Seconds(&p_i2c_handle);
 	uint8_t minutes = DS3231_Get_Minutes(&p_i2c_handle);
 	DS3231_Hours_t hours = DS3231_Get_Hours(&p_i2c_handle);
+	DS3231_DOW_t dow = DS3231_Get_Day_Of_Week(&p_i2c_handle);
 
 	for(;;);
 }

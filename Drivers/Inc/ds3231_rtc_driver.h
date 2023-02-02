@@ -36,6 +36,7 @@
 
 #define DS3231_AM_PM_BIT			5
 #define DS3231_12_24_BIT			6
+#define DS3231_CENTURY_BIT			7
 
 typedef struct
 {
@@ -82,12 +83,39 @@ typedef struct
 	uint8_t					hour;
 } DS3231_Hours_t;
 
+typedef enum
+{
+	SUN = 1,
+	MON,
+	TUE,
+	WED,
+	THU,
+	FRI,
+	SAT
+} DS3231_DOW_t;
+
+typedef struct
+{
+	uint8_t month;
+	uint8_t century;
+} DS3231_Month_Century_t;
+
+#define DS3231_SUNDAY		1
+#define DS3231_MONDAY		2
+#define DS3231_TUESDAY		3
+#define DS3231_WEDNESDAY	4
+#define DS3231_THURSDAY		5
+#define DS3231_FRIDAY		6
+#define DS3231_SATURDAY		7
+
 uint8_t DS3231_Get_Seconds(I2C_Handle_t *p_i2c_handle);
 uint8_t DS3231_Get_Minutes(I2C_Handle_t *p_i2c_handle);
 DS3231_Hours_t DS3231_Get_Hours(I2C_Handle_t *p_i2c_handle);
-void DS3231_Get_Day();
-void DS3231_Get_Date();
-void DS3231_Get_Month();
+DS3231_DOW_t DS3231_Get_Day_Of_Week(I2C_Handle_t *p_i2c_handle);
+uint8_t DS3231_Get_Date(I2C_Handle_t *p_i2c_handle);
+uint8_t DS3231_Get_Month(I2C_Handle_t *p_i2c_handle);
+uint8_t DS3231_Get_Century(I2C_Handle_t *p_i2c_handle);
+DS3231_Month_Century_t DS3231_Get_Month_Century(I2C_Handle_t *p_i2c_handle);
 void DS3231_Get_Year();
 
 void DS3231_Get_Full_Date();

@@ -27,17 +27,6 @@
   #warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
 #endif
 
-typedef struct
-{
-	uint8_t seconds;
-	uint8_t minutes;
-	uint8_t hours;
-	uint8_t day;
-	uint8_t date;
-	uint8_t month;
-	uint8_t year;
-} DS3231_Time_t;
-
 int main(void)
 {
 	// configure I2C1 GPIO pins as SCL
@@ -70,8 +59,11 @@ int main(void)
 	I2C_Handle_t p_i2c_handle = {I2C2, config, NULL, NULL, 0, 0, 0, 21, 0, 0};
 	I2C_Init(&p_i2c_handle);
 
-	DS3231_Datetime_t datetime = DS3231_Get_Full_Datetime(&p_i2c_handle);
-	float temp = DS3231_Get_Temp(&p_i2c_handle);
+	DS3231_Hours_t hours_12 = DS3231_Get_Hours(&p_i2c_handle);
+
+	DS3231_Set_12_24_Hour(&p_i2c_handle, DS3231_12_HOUR);
+
+	DS3231_Hours_t hours_24 = DS3231_Get_Hours(&p_i2c_handle);
 
 	for(;;);
 }

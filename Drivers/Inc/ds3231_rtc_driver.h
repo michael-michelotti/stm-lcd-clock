@@ -72,7 +72,8 @@ typedef enum
 typedef enum
 {
 	DS3231_AM,
-	DS3231_PM
+	DS3231_PM,
+	DS3231_NO_AM_PM
 } DS3231_AM_PM_t;
 
 typedef struct
@@ -129,14 +130,12 @@ uint8_t DS3231_Get_Month(I2C_Handle_t *p_i2c_handle);
 uint8_t DS3231_Get_Century(I2C_Handle_t *p_i2c_handle);
 DS3231_Month_Century_t DS3231_Get_Month_Century(I2C_Handle_t *p_i2c_handle);
 uint8_t DS3231_Get_Year(I2C_Handle_t *p_i2c_handle);
-
 DS3231_Full_Date_t DS3231_Get_Full_Date(I2C_Handle_t *p_i2c_handle);
 DS3231_Full_Time_t DS3231_Get_Full_Time(I2C_Handle_t *p_i2c_handle);
 DS3231_Datetime_t DS3231_Get_Full_Datetime(I2C_Handle_t *p_i2c_handle);
-
 float DS3231_Get_Temp(I2C_Handle_t *p_i2c_handle);
 
-void DS3231_Set_12_24_Hour();
+void DS3231_Set_12_24_Hour(I2C_Handle_t *p_i2c_handle, DS3231_12_24_Hour_t hour_mode);
 void DS3231_Set_Seconds();
 void DS3231_Set_Minutes();
 void DS3231_Set_Hours();

@@ -7,6 +7,7 @@
 
 #include "ds3231_rtc_driver.h"
 
+static uint8_t Convert_Hours_12_24(uint8_t current_byte, DS3231_12_24_Hour_t hour_mode);
 static float Convert_Temp(uint8_t *p_rx_buffer);
 static DS3231_Full_Date_t Convert_Full_Date(uint8_t *p_rx_buffer);
 static DS3231_Full_Time_t Convert_Full_Time(uint8_t *p_rx_buffer);
@@ -17,8 +18,10 @@ static DS3231_DOW_t Convert_DOW(uint8_t dow_byte);
 static uint8_t Convert_Month(uint8_t month_byte);
 static uint8_t Convert_Date(uint8_t date_byte);
 static uint8_t Convert_Year(uint8_t year_byte);
+static uint8_t Convert_Binary_To_BCD(uint8_t current_byte, uint8_t hour);
 static uint8_t Convert_BCD_To_Binary(uint8_t bcd_byte);
 
+/*************** CLOCK MODULE GETTER FUNCTIONS *****************/
 uint8_t DS3231_Get_Seconds(I2C_Handle_t *p_i2c_handle)
 {
 	uint8_t p_tx_buffer[1] = { DS3231_SECONDS };
@@ -199,7 +202,46 @@ float DS3231_Get_Temp(I2C_Handle_t *p_i2c_handle)
 	return Convert_Temp(p_rx_buffer);
 }
 
-void DS3231_Set_12_24_Hour();
+/*************** CLOCK MODULE SETTER FUNCTIONS *****************/
+void DS3231_Set_12_24_Hour(I2C_Handle_t *p_i2c_handle, DS3231_12_24_Hour_t hour_mode)
+{
+	DS3231_12_24_Hour_t current_mode;
+	uint8_t current_hour_byte;
+
+	// write register pointer to hours byte
+	uint8_t p_tx_buffer[2] = { DS3231_HOURS, 0 };
+	uint8_t p_rx_buffer[1];
+	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 1, DS3231_SLAVE_ADDR, I2C_ENABLE_SR);
+	// if 12/24 bit (bit 6) is already set to desired mode, do nothing
+	I2C_Master_Receive(p_i2c_handle, p_rx_buffer, 1, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
+
+	current_hour_byte = *p_rx_buffer;
+	current_mode = ((current_hour_byte >> DS3231_12_24_BIT) & 1);
+
+	if (current_mode == hour_mode)
+	{
+		return;
+	}
+	else
+	{
+		// if 12/24 bit is not set to desired mode, set it and calculate new hour value
+		if (current_mode == DS3231_12_HOUR)
+		{
+			// calculate new hour value
+			current_hour_byte = Convert_Hours_12_24(current_hour_byte, DS3231_24_HOUR);
+		}
+		else
+		{
+			// calculate new hour value
+			current_hour_byte = Convert_Hours_12_24(current_hour_byte, DS3231_12_HOUR);
+		}
+	}
+	// rewrite hour register pointer to clock module
+	p_tx_buffer[1] = current_hour_byte;
+	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 2, DS3231_SLAVE_ADDR, I2C_ENABLE_SR);
+}
+
+
 void DS3231_Set_Seconds();
 void DS3231_Set_Minutes();
 void DS3231_Set_Hours();
@@ -210,6 +252,51 @@ void DS3231_Set_Year();
 
 void DS3231_Set_Full_Date();
 void DS3231_Set_Full_Time();
+
+/*************** PRIVATE UTILITY FUNCTIONS *****************/
+static uint8_t Convert_Hours_12_24(uint8_t current_byte, DS3231_12_24_Hour_t hour_mode)
+{
+	DS3231_Hours_t hour_struct;
+	uint8_t hour;
+	uint8_t bottom_nybble;
+	uint8_t top_nybble;
+
+	hour_struct = Convert_Hours(current_byte);
+	// if 12 hour mode, current byte is in 24 hour format, needs to be converted to 12 hour format
+	if (hour_mode == DS3231_12_HOUR)
+	{
+		// get hour struct from current byte
+		hour_struct = Convert_Hours(current_byte);
+		// set 12/24 hour bit to high (12 hour format)
+		current_byte |= (1 << DS3231_12_24_BIT);
+		// if hour value is greater than 12, set AM/PM to high (PM)
+		if (hour_struct.hour > 12)
+		{
+			current_byte |= (1 << DS3231_AM_PM_BIT);
+		}
+		else
+		{
+			current_byte &= ~(1 << DS3231_AM_PM_BIT);
+		}
+		// if PM, subtract 12
+		if (hour_struct.am_pm == DS3231_PM)
+			hour_struct.hour -= 12;
+
+		return Convert_Binary_To_BCD(current_byte, hour_struct.hour);
+	}
+	else // current byte is 12 hour mode, needs to be 24 hour
+	{
+		// get hour struct from current byte
+		hour_struct = Convert_Hours(current_byte);
+		// set 12/24 hour bit to low (24 hour format)
+		current_byte &= ~(1 << DS3231_12_24_BIT);
+		// convert hour to 24 hour from AM/PM
+		if (hour_struct.am_pm == DS3231_PM)
+			hour_struct.hour += 12;
+
+		return Convert_Binary_To_BCD(current_byte, hour_struct.hour);
+	}
+}
 
 static float Convert_Temp(uint8_t *p_rx_buffer)
 {
@@ -271,6 +358,8 @@ static DS3231_Hours_t Convert_Hours(uint8_t hour_byte)
 
 	if (hour_struct.hour_12_24 == DS3231_12_HOUR)
 		hour_struct.am_pm = (hour_byte >> DS3231_AM_PM_BIT) & 1;
+	else
+		hour_struct.am_pm = DS3231_NO_AM_PM;
 
 	// convert hour BCD to binary
 	hour_tens = (hour_byte >> 4) & 1;
@@ -309,6 +398,27 @@ static uint8_t Convert_Year(uint8_t year_byte)
 	// tens place seconds (bit 4)
 	uint8_t tens_place = (year_byte >> 4)& 0xF;
 	return zeroes_place + (tens_place * 10);
+}
+
+// TODO: Currently only works for converting binary hour to BCD hour
+static uint8_t Convert_Binary_To_BCD(uint8_t current_byte, uint8_t hour)
+{
+	uint8_t bottom_nybble;
+	uint8_t top_nybble;
+
+	// convert hour to BCD, then write to current byte
+	bottom_nybble = hour % 10;
+	top_nybble = hour / 10;
+
+	// take bottom 4 bits of bottom nybble
+	current_byte &= ~0xF;
+	current_byte |= (bottom_nybble & 0xF);
+
+	// set top nybble, clear bytes then shift 4 and then set bytes
+	current_byte &= ~(0x3 << 4);
+	current_byte |= (top_nybble << 4);
+
+	return current_byte;
 }
 
 // TODO: Possibly update BCD function to include how many bits for 10s place

@@ -175,7 +175,6 @@ void I2C_Cleanup(I2C_Register_t *p_i2c_x);
 */
 
 /*************** PRIVATE UTILITY FUNCTIONS *****************/
-
 static uint8_t I2C_Check_Status_Flag(I2C_Handle_t *p_i2c_handle, uint8_t flag_num, uint8_t sr_1_or_2)
 {
 	// 0 = SR1, 1 = SR2

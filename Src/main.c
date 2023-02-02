@@ -59,10 +59,10 @@ int main(void)
 	I2C_Handle_t p_i2c_handle = {I2C2, config, NULL, NULL, 0, 0, 0, 21, 0, 0};
 	I2C_Init(&p_i2c_handle);
 
-	uint8_t date = 2;
-	DS3231_Set_Date(&p_i2c_handle, date);
+	uint8_t month = 2;
+	DS3231_Set_Month(&p_i2c_handle, month);
 
-	uint8_t out = DS3231_Get_Date(&p_i2c_handle);
+	uint8_t out = DS3231_Get_Month(&p_i2c_handle);
 
 	for(;;);
 }

@@ -70,10 +70,7 @@ int main(void)
 	I2C_Handle_t p_i2c_handle = {I2C2, config, NULL, NULL, 0, 0, 0, 21, 0, 0};
 	I2C_Init(&p_i2c_handle);
 
-	uint8_t seconds = DS3231_Get_Seconds(&p_i2c_handle);
-	uint8_t minutes = DS3231_Get_Minutes(&p_i2c_handle);
-	DS3231_Hours_t hours = DS3231_Get_Hours(&p_i2c_handle);
-	DS3231_DOW_t dow = DS3231_Get_Day_Of_Week(&p_i2c_handle);
+	DS3231_Datetime_t datetime = DS3231_Get_Full_Datetime(&p_i2c_handle);
 
 	for(;;);
 }

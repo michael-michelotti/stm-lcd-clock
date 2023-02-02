@@ -43,7 +43,6 @@ typedef struct
 	uint8_t seconds;
 	uint8_t minutes;
 	uint8_t hours;
-	uint8_t day;
 	uint8_t date;
 	uint8_t month_century;
 	uint8_t year;
@@ -100,13 +99,26 @@ typedef struct
 	uint8_t century;
 } DS3231_Month_Century_t;
 
-#define DS3231_SUNDAY		1
-#define DS3231_MONDAY		2
-#define DS3231_TUESDAY		3
-#define DS3231_WEDNESDAY	4
-#define DS3231_THURSDAY		5
-#define DS3231_FRIDAY		6
-#define DS3231_SATURDAY		7
+typedef struct
+{
+	uint8_t year;
+	uint8_t month;
+	uint8_t date;
+	DS3231_DOW_t dow;
+} DS3231_Full_Date_t;
+
+typedef struct
+{
+	uint8_t seconds;
+	uint8_t minutes;
+	DS3231_Hours_t hours;
+} DS3231_Full_Time_t;
+
+typedef struct
+{
+	DS3231_Full_Date_t date;
+	DS3231_Full_Time_t time;
+} DS3231_Datetime_t;
 
 uint8_t DS3231_Get_Seconds(I2C_Handle_t *p_i2c_handle);
 uint8_t DS3231_Get_Minutes(I2C_Handle_t *p_i2c_handle);
@@ -116,10 +128,11 @@ uint8_t DS3231_Get_Date(I2C_Handle_t *p_i2c_handle);
 uint8_t DS3231_Get_Month(I2C_Handle_t *p_i2c_handle);
 uint8_t DS3231_Get_Century(I2C_Handle_t *p_i2c_handle);
 DS3231_Month_Century_t DS3231_Get_Month_Century(I2C_Handle_t *p_i2c_handle);
-void DS3231_Get_Year();
+uint8_t DS3231_Get_Year(I2C_Handle_t *p_i2c_handle);
 
-void DS3231_Get_Full_Date();
-void DS3231_Get_Full_Time();
+DS3231_Full_Date_t DS3231_Get_Full_Date(I2C_Handle_t *p_i2c_handle);
+DS3231_Full_Time_t DS3231_Get_Full_Time(I2C_Handle_t *p_i2c_handle);
+DS3231_Datetime_t DS3231_Get_Full_Datetime(I2C_Handle_t *p_i2c_handle);
 
 void DS3231_Get_Temp();
 

@@ -20,6 +20,7 @@ static DS3231_DOW_t Convert_DOW(uint8_t dow_byte);
 static uint8_t Convert_Month(uint8_t month_byte);
 static uint8_t Convert_Date(uint8_t date_byte);
 static uint8_t Convert_Year(uint8_t year_byte);
+static uint8_t Convert_Binary_To_BCD_Year(uint8_t binary_byte);
 static uint8_t Convert_Binary_To_BCD_Month(uint8_t binary_byte);
 static uint8_t Convert_Binary_To_BCD(uint8_t current_byte, uint8_t hour);
 static uint8_t Convert_BCD_To_Binary(uint8_t bcd_byte);
@@ -323,7 +324,11 @@ void DS3231_Set_Month(I2C_Handle_t *p_i2c_handle, uint8_t month)
 	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 2, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
 }
 
-void DS3231_Set_Year();
+void DS3231_Set_Year(I2C_Handle_t *p_i2c_handle, uint8_t year)
+{
+	uint8_t p_tx_buffer[2] = { DS3231_YEAR, Convert_Binary_To_BCD_Year(year) };
+	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 2, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
+}
 
 void DS3231_Set_Full_Date();
 void DS3231_Set_Full_Time();
@@ -478,6 +483,17 @@ static uint8_t Convert_Year(uint8_t year_byte)
 	// tens place seconds (bit 4)
 	uint8_t tens_place = (year_byte >> 4)& 0xF;
 	return zeroes_place + (tens_place * 10);
+}
+
+static uint8_t Convert_Binary_To_BCD_Year(uint8_t binary_byte)
+{
+	uint8_t low_nybble;
+	uint8_t high_nybble;
+
+	low_nybble = binary_byte % 10;
+	high_nybble = binary_byte / 10;
+
+	return (high_nybble << 4) | (low_nybble & 0xF);
 }
 
 static uint8_t Convert_Binary_To_BCD_Month(uint8_t binary_byte)

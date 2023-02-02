@@ -59,11 +59,10 @@ int main(void)
 	I2C_Handle_t p_i2c_handle = {I2C2, config, NULL, NULL, 0, 0, 0, 21, 0, 0};
 	I2C_Init(&p_i2c_handle);
 
-	DS3231_Hours_t hours_12 = DS3231_Get_Hours(&p_i2c_handle);
+	DS3231_Set_Seconds(&p_i2c_handle, 45);
+	DS3231_Set_Minutes(&p_i2c_handle, 28);
 
-	DS3231_Set_12_24_Hour(&p_i2c_handle, DS3231_12_HOUR);
-
-	DS3231_Hours_t hours_24 = DS3231_Get_Hours(&p_i2c_handle);
+	DS3231_Full_Time_t time = DS3231_Get_Full_Time(&p_i2c_handle);
 
 	for(;;);
 }

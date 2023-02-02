@@ -7,6 +7,7 @@
 
 #include "ds3231_rtc_driver.h"
 
+static uint8_t Convert_Binary_To_BCD_Seconds_Minutes(uint8_t binary_byte);
 static uint8_t Convert_Hours_12_24(uint8_t current_byte, DS3231_12_24_Hour_t hour_mode);
 static float Convert_Temp(uint8_t *p_rx_buffer);
 static DS3231_Full_Date_t Convert_Full_Date(uint8_t *p_rx_buffer);
@@ -242,9 +243,23 @@ void DS3231_Set_12_24_Hour(I2C_Handle_t *p_i2c_handle, DS3231_12_24_Hour_t hour_
 }
 
 
-void DS3231_Set_Seconds();
-void DS3231_Set_Minutes();
-void DS3231_Set_Hours();
+void DS3231_Set_Seconds(I2C_Handle_t *p_i2c_handle, uint8_t seconds)
+{
+	uint8_t p_tx_buffer[2] = { DS3231_SECONDS, Convert_Binary_To_BCD_Seconds_Minutes(seconds) };
+	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 2, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
+}
+
+void DS3231_Set_Minutes(I2C_Handle_t *p_i2c_handle, uint8_t minutes)
+{
+	uint8_t p_tx_buffer[2] = { DS3231_MINUTES, Convert_Binary_To_BCD_Seconds_Minutes(minutes) };
+	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 2, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
+}
+
+void DS3231_Set_Hours()
+{
+
+}
+
 void DS3231_Set_Day();
 void DS3231_Set_Date();
 void DS3231_Set_Month();
@@ -398,6 +413,17 @@ static uint8_t Convert_Year(uint8_t year_byte)
 	// tens place seconds (bit 4)
 	uint8_t tens_place = (year_byte >> 4)& 0xF;
 	return zeroes_place + (tens_place * 10);
+}
+
+static uint8_t Convert_Binary_To_BCD_Seconds_Minutes(uint8_t binary_byte)
+{
+	uint8_t low_nybble;
+	uint8_t high_nybble;
+
+	low_nybble = binary_byte % 10;
+	high_nybble = binary_byte / 10;
+
+	return (high_nybble << 4) | (low_nybble & 0xF);
 }
 
 // TODO: Currently only works for converting binary hour to BCD hour

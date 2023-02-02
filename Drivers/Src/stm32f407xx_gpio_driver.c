@@ -5,90 +5,14 @@
  *      Author: Michael
  */
 
-
 #include "stm32f407xx_gpio_driver.h"
 
-static void GPIO_Configure_Mode(GPIO_Handle_t *p_gpio_handle)
-{
-	// clear mode bits for proper GPIO pin
-	p_gpio_handle->p_gpio_x->MODER &= ~( 0b11 << (2 * p_gpio_handle->gpio_pin_config.gpio_pin_num) );
-	// set mode bits properly
-	p_gpio_handle->p_gpio_x->MODER |= ( p_gpio_handle->gpio_pin_config.gpio_pin_mode << (2 * p_gpio_handle->gpio_pin_config.gpio_pin_num) );
-}
-
-static void GPIO_EXTI_Rising_Falling_Config(uint8_t gpio_pin_num, uint8_t enable, uint8_t rise_or_fall)
-{
-	if (rise_or_fall == RISING)
-	{
-		if (enable == ENABLE)
-			EXTI->RTSR |= (1 << gpio_pin_num);
-		else
-			EXTI->RTSR &= ~(1 << gpio_pin_num);
-	}
-	else if (rise_or_fall == FALLING)
-	{
-		if (enable == ENABLE)
-			EXTI->FTSR |= (1 << gpio_pin_num);
-		else
-			EXTI->FTSR &= ~(1 << gpio_pin_num);
-	}
-}
-
-static uint8_t GPIO_EXTI_Base_Addr_To_Code(GPIO_Register_Map_t *p_gpio_base_addr)
-{
-	if (p_gpio_base_addr == GPIOA)
-		return 0b0000;
-	else if (p_gpio_base_addr == GPIOB)
-		return 0b0001;
-	else if (p_gpio_base_addr == GPIOC)
-		return 0b0010;
-	else if (p_gpio_base_addr == GPIOD)
-		return 0b0011;
-	else if (p_gpio_base_addr == GPIOE)
-		return 0b0100;
-	else if (p_gpio_base_addr == GPIOF)
-		return 0b0101;
-	else if (p_gpio_base_addr == GPIOG)
-		return 0b0110;
-	else if (p_gpio_base_addr == GPIOH)
-		return 0b0111;
-	else if (p_gpio_base_addr == GPIOI)
-		return 0b1000;
-	else
-		return -1;
-}
-
-static void GPIO_EXTI_Config(GPIO_Handle_t *p_gpio_handle)
-{
-	// give control of exti line to proper gpio a..i
-	uint8_t exti_reg_num = p_gpio_handle->gpio_pin_config.gpio_pin_num / 4;
-	uint8_t exti_bit_offset = (p_gpio_handle->gpio_pin_config.gpio_pin_num % 4) * 4;
-	uint8_t port_code = GPIO_EXTI_Base_Addr_To_Code(p_gpio_handle->p_gpio_x);
-
-	SYSCFG_PCLK_EN();
-	SYSCFG->EXTICR[exti_reg_num] |= (port_code << exti_bit_offset);
-}
-
-static void GPIO_Configure_Alternate_Function(GPIO_Handle_t *p_gpio_handle)
-{
-	uint8_t high_or_low = 0;
-	uint8_t shift_amount = 0;
-
-	// depending on whether the pin number is greater than or less than 8, i have to assign the alternate
-	// function using either the alternate function high or alternate function low registers
-	high_or_low = p_gpio_handle->gpio_pin_config.gpio_pin_num / 8;
-	shift_amount = p_gpio_handle->gpio_pin_config.gpio_pin_num % 8;
-	if (high_or_low == 0)
-	{
-		p_gpio_handle->p_gpio_x->AFRL &= ~(0b1111 << (shift_amount * 4));
-		p_gpio_handle->p_gpio_x->AFRL |= p_gpio_handle->gpio_pin_config.gpio_pin_alt_fun_mode << (shift_amount * 4);
-	}
-	else if (high_or_low == 1)
-	{
-		p_gpio_handle->p_gpio_x->AFRH &= ~(0b1111 << (shift_amount * 4));
-		p_gpio_handle->p_gpio_x->AFRH |= p_gpio_handle->gpio_pin_config.gpio_pin_alt_fun_mode << (shift_amount * 4);
-	}
-}
+/*************** PRIVATE UTILITY FUNCTION DECLARATIONS*****************/
+static void GPIO_Configure_Mode(GPIO_Handle_t *p_gpio_handle);
+static void GPIO_EXTI_Rising_Falling_Config(uint8_t gpio_pin_num, uint8_t enable, uint8_t rise_or_fall);
+static uint8_t GPIO_EXTI_Base_Addr_To_Code(GPIO_Register_Map_t *p_gpio_base_addr);
+static void GPIO_EXTI_Config(GPIO_Handle_t *p_gpio_handle);
+static void GPIO_Configure_Alternate_Function(GPIO_Handle_t *p_gpio_handle);
 
 /* READ FUNCTIONALITY */
 void GPIO_Init(GPIO_Handle_t *p_gpio_handle)
@@ -288,5 +212,88 @@ void GPIO_IRQ_Handler(uint8_t pin_num)
 	{
 		// clear the bit
 		EXTI->PR |= (1 << pin_num);
+	}
+}
+
+/*************** PRIVATE UTILITY FUNCTIONS *****************/
+static void GPIO_Configure_Mode(GPIO_Handle_t *p_gpio_handle)
+{
+	// clear mode bits for proper GPIO pin
+	p_gpio_handle->p_gpio_x->MODER &= ~( 0b11 << (2 * p_gpio_handle->gpio_pin_config.gpio_pin_num) );
+	// set mode bits properly
+	p_gpio_handle->p_gpio_x->MODER |= ( p_gpio_handle->gpio_pin_config.gpio_pin_mode << (2 * p_gpio_handle->gpio_pin_config.gpio_pin_num) );
+}
+
+static void GPIO_EXTI_Rising_Falling_Config(uint8_t gpio_pin_num, uint8_t enable, uint8_t rise_or_fall)
+{
+	if (rise_or_fall == RISING)
+	{
+		if (enable == ENABLE)
+			EXTI->RTSR |= (1 << gpio_pin_num);
+		else
+			EXTI->RTSR &= ~(1 << gpio_pin_num);
+	}
+	else if (rise_or_fall == FALLING)
+	{
+		if (enable == ENABLE)
+			EXTI->FTSR |= (1 << gpio_pin_num);
+		else
+			EXTI->FTSR &= ~(1 << gpio_pin_num);
+	}
+}
+
+static uint8_t GPIO_EXTI_Base_Addr_To_Code(GPIO_Register_Map_t *p_gpio_base_addr)
+{
+	if (p_gpio_base_addr == GPIOA)
+		return 0b0000;
+	else if (p_gpio_base_addr == GPIOB)
+		return 0b0001;
+	else if (p_gpio_base_addr == GPIOC)
+		return 0b0010;
+	else if (p_gpio_base_addr == GPIOD)
+		return 0b0011;
+	else if (p_gpio_base_addr == GPIOE)
+		return 0b0100;
+	else if (p_gpio_base_addr == GPIOF)
+		return 0b0101;
+	else if (p_gpio_base_addr == GPIOG)
+		return 0b0110;
+	else if (p_gpio_base_addr == GPIOH)
+		return 0b0111;
+	else if (p_gpio_base_addr == GPIOI)
+		return 0b1000;
+	else
+		return -1;
+}
+
+static void GPIO_EXTI_Config(GPIO_Handle_t *p_gpio_handle)
+{
+	// give control of exti line to proper gpio a..i
+	uint8_t exti_reg_num = p_gpio_handle->gpio_pin_config.gpio_pin_num / 4;
+	uint8_t exti_bit_offset = (p_gpio_handle->gpio_pin_config.gpio_pin_num % 4) * 4;
+	uint8_t port_code = GPIO_EXTI_Base_Addr_To_Code(p_gpio_handle->p_gpio_x);
+
+	SYSCFG_PCLK_EN();
+	SYSCFG->EXTICR[exti_reg_num] |= (port_code << exti_bit_offset);
+}
+
+static void GPIO_Configure_Alternate_Function(GPIO_Handle_t *p_gpio_handle)
+{
+	uint8_t high_or_low = 0;
+	uint8_t shift_amount = 0;
+
+	// depending on whether the pin number is greater than or less than 8, i have to assign the alternate
+	// function using either the alternate function high or alternate function low registers
+	high_or_low = p_gpio_handle->gpio_pin_config.gpio_pin_num / 8;
+	shift_amount = p_gpio_handle->gpio_pin_config.gpio_pin_num % 8;
+	if (high_or_low == 0)
+	{
+		p_gpio_handle->p_gpio_x->AFRL &= ~(0b1111 << (shift_amount * 4));
+		p_gpio_handle->p_gpio_x->AFRL |= p_gpio_handle->gpio_pin_config.gpio_pin_alt_fun_mode << (shift_amount * 4);
+	}
+	else if (high_or_low == 1)
+	{
+		p_gpio_handle->p_gpio_x->AFRH &= ~(0b1111 << (shift_amount * 4));
+		p_gpio_handle->p_gpio_x->AFRH |= p_gpio_handle->gpio_pin_config.gpio_pin_alt_fun_mode << (shift_amount * 4);
 	}
 }

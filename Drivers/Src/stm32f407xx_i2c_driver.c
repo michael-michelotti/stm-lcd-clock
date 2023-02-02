@@ -10,6 +10,9 @@
 #include "stm32f407xx_gpio_driver.h"
 #include <stdio.h>
 
+/*************** PRIVATE UTILITY FUNCTION DECLARATIONS*****************/
+static uint8_t I2C_Check_Status_Flag(I2C_Handle_t *p_i2c_handle, uint8_t flag_num, uint8_t sr_1_or_2);
+static void I2C_Write_Address_Byte(I2C_Handle_t *p_i2c_handle, uint8_t slave_addr, uint8_t read_or_write);
 static void Manage_Acking(I2C_Register_Map_t *p_i2c_x, uint8_t enable);
 static void Configure_I2C_Clock_Mode(I2C_Handle_t *p_i2c_handle);
 static void Set_I2C_CR2_Freq(I2C_Register_Map_t *p_i2c_x, uint32_t freq);
@@ -25,48 +28,27 @@ void I2C_Peri_Clk_Ctrl(I2C_Register_Map_t *p_i2c_x, uint8_t enable)
 	if (enable == ENABLE)
 	{
 		if (p_i2c_x == I2C1)
-		{
 			I2C1_PCLK_EN();
-		}
-		if (p_i2c_x == I2C2)
-		{
+		else if (p_i2c_x == I2C2)
 			I2C2_PCLK_EN();
-		}
-		if (p_i2c_x == I2C3)
-		{
+		else if (p_i2c_x == I2C3)
 			I2C3_PCLK_EN();
-		}
 	}
 	if (enable == DISABLE)
 	{
 		if (p_i2c_x == I2C1)
-		{
 			I2C1_PCLK_DI();
-		}
-		if (p_i2c_x == I2C2)
-		{
+		else if (p_i2c_x == I2C2)
 			I2C2_PCLK_DI();
-		}
-		if (p_i2c_x == I2C3)
-		{
+		else if (p_i2c_x == I2C3)
 			I2C3_PCLK_DI();
-		}
 	}
 }
 
 void I2C_Init(I2C_Handle_t *p_i2c_handle)
 {
-	// CLOCK CONFIGURATION
 	// enable peripheral clock
 	I2C_Peri_Clk_Ctrl(p_i2c_handle->p_i2c_x, ENABLE);
-
-	// I2C_Errata_Reset(p_i2c_handle);
-
-	/*
-	// try a SW reset - busy bit seems to stay set???
-	p_i2c_handle->p_i2c_x->CR1 |= (1 << I2C_CR1_SWRST);
-	while(p_i2c_handle->p_i2c_x->CR1 & (1 << I2C_CR1_SWRST));
-	 */
 
 	// configure frequency and CCR
 	Configure_I2C_Clock_Mode(p_i2c_handle);
@@ -93,59 +75,46 @@ void I2C_Peripheral_Power_Switch(I2C_Register_Map_t *p_i2c_x, uint8_t on_or_off)
 	p_i2c_x->CR1 |= (1 << I2C_CR1_PE);
 }
 
-void I2C_Generate_Start_Condition(I2C_Handle_t *p_i2c_handle)
+void I2C_Master_Send(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr)
 {
-	p_i2c_handle->p_i2c_x->CR1 |= (1 << I2C_CR1_START);
+	// MASTER TRANSMISSION
+	// sequence diagram for master transmission is on page 849 of the board reference manual
+	// 1) generate start condition
+	I2C_Generate_Start_Condition(p_i2c_handle);
+
+	// 2) EV5 (not an interrupt in this blocking API). Start Bit (SB) in SR1
+	// check SB flag in SR1 to clear EV5
+	while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_SB, I2C_SR1_CHECK));
+
+	// 3) After receiving ACK from slave, event EV6. ADDR bit set high (meaning address was matched)
+	// check ADDR flag in SR1, then check TRA flag in SR2 to verify we are configured as transmitter
+	I2C_Write_Address_Byte(p_i2c_handle, slave_addr, I2C_WRITE);
+	while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_ADDR, I2C_SR1_CHECK));
+
+	if (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR2_TRA, I2C_SR2_CHECK))
+	{
+		// we are configured as receiver, which is wrong. just return
+		// return;
+	}
+
+	while (len > 0)
+	{
+		// 4) After EV6 event cleared, EV8_1 event triggers immediately, meaning TxE = 1, transmit buffer is empty
+		// wait for TxE to be set to 1, indicating EV8_1 event has triggered. write data to DR
+		while(!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_TXE, I2C_SR1_CHECK));
+		p_i2c_handle->p_i2c_x->DR = *p_tx_buffer;
+		p_tx_buffer++;
+		len--;
+	}
+
+	// 6) After every byte has been sent, generate the stop condition
+	// once length becomes 0, wait for txe=1 and btf=1, then generate stop condition
+	while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_TXE, I2C_SR1_CHECK));
+	while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_BTF, I2C_SR1_CHECK));
+	if (sr == I2C_DISABLE_SR)
+		I2C_Generate_Stop_Condition(p_i2c_handle);
 }
 
-static void I2C_Generate_Stop_Condition(I2C_Handle_t *p_i2c_handle)
-{
-	p_i2c_handle->p_i2c_x->CR1 |= (1 << I2C_CR1_STOP);
-}
-
-static uint8_t I2C_Check_Status_Flag(I2C_Handle_t *p_i2c_handle, uint8_t flag_num, uint8_t sr_1_or_2)
-{
-	// 0 = SR1, 1 = SR2
-	if (!sr_1_or_2)
-	{
-		if (p_i2c_handle->p_i2c_x->SR1 & (1 << flag_num))
-		{
-			return SET;
-		}
-		else
-		{
-			return RESET;
-		}
-		// return ((p_i2c_handle->p_i2c_x->SR1 >> flag_num) & 1);
-	}
-	else
-	{
-		if (p_i2c_handle->p_i2c_x->SR2 & (1 << flag_num))
-		{
-			return SET;
-		}
-		else
-		{
-			return RESET;
-		}
-		// return (p_i2c_handle->p_i2c_x->SR2 >> flag_num) & 1;
-	}
-}
-
-static void I2C_Write_Address_Byte(I2C_Handle_t *p_i2c_handle, uint8_t slave_addr, uint8_t read_or_write)
-{
-	slave_addr <<= 1;
-	// 0 for write, 1 for read
-	if (!read_or_write)
-	{
-		slave_addr &= ~1;
-	}
-	else
-	{
-		slave_addr |= 1;
-	}
-	p_i2c_handle->p_i2c_x->DR = slave_addr;
-}
 
 void I2C_Master_Receive(I2C_Handle_t *p_i2c_handle, uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr)
 {
@@ -194,58 +163,46 @@ void I2C_Master_Receive(I2C_Handle_t *p_i2c_handle, uint8_t *p_rx_buffer, uint32
 	}
 }
 
-void I2C_Master_Send(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr)
+void I2C_Generate_Start_Condition(I2C_Handle_t *p_i2c_handle)
 {
-	// MASTER TRANSMISSION
-	// sequence diagram for master transmission is on page 849 of the board reference manual
-	// 1) generate start condition
-	I2C_Generate_Start_Condition(p_i2c_handle);
-
-	// 2) EV5 (not an interrupt in this blocking API). Start Bit (SB) in SR1
-	// check SB flag in SR1 to clear EV5
-	while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_SB, I2C_SR1_CHECK));
-
-	// 3) After receiving ACK from slave, event EV6. ADDR bit set high (meaning address was matched)
-	// check ADDR flag in SR1, then check TRA flag in SR2 to verify we are configured as transmitter
-	I2C_Write_Address_Byte(p_i2c_handle, slave_addr, I2C_WRITE);
-	while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_ADDR, I2C_SR1_CHECK));
-
-	if (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR2_TRA, I2C_SR2_CHECK))
-	{
-		// we are configured as receiver, which is wrong. just return
-		// return;
-	}
-
-	while (len > 0)
-	{
-		// 4) After EV6 event cleared, EV8_1 event triggers immediately, meaning TxE = 1, transmit buffer is empty
-		// wait for TxE to be set to 1, indicating EV8_1 event has triggered. write data to DR
-		while(!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_TXE, I2C_SR1_CHECK));
-		p_i2c_handle->p_i2c_x->DR = *p_tx_buffer;
-		p_tx_buffer++;
-		len--;
-	}
-
-	// 6) After every byte has been sent, generate the stop condition
-	// once length becomes 0, wait for txe=1 and btf=1, then generate stop condition
-	while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_TXE, I2C_SR1_CHECK));
-	while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_BTF, I2C_SR1_CHECK));
-	if (sr == I2C_DISABLE_SR)
-		I2C_Generate_Stop_Condition(p_i2c_handle);
+	p_i2c_handle->p_i2c_x->CR1 |= (1 << I2C_CR1_START);
 }
 
+void I2C_Generate_Stop_Condition(I2C_Handle_t *p_i2c_handle)
+{
+	p_i2c_handle->p_i2c_x->CR1 |= (1 << I2C_CR1_STOP);
+}
 
 /*
 void I2C_Cleanup(I2C_Register_t *p_i2c_x);
-
-
-void I2C_Manage_Acking(I2C_Register_t *p_i2c_x, uint8_t enable);
-
-void I2C_MasterSend(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr,uint8_t sr);
-void I2C_MasterReceive(I2C_Handle_t *p_i2c_handle, uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr);
 */
 
 /*************** PRIVATE UTILITY FUNCTIONS *****************/
+
+static uint8_t I2C_Check_Status_Flag(I2C_Handle_t *p_i2c_handle, uint8_t flag_num, uint8_t sr_1_or_2)
+{
+	// 0 = SR1, 1 = SR2
+	if (!sr_1_or_2)
+		return (p_i2c_handle->p_i2c_x->SR1 >> flag_num) & 1;
+	else
+		return (p_i2c_handle->p_i2c_x->SR2 >> flag_num) & 1;
+}
+
+static void I2C_Write_Address_Byte(I2C_Handle_t *p_i2c_handle, uint8_t slave_addr, uint8_t read_or_write)
+{
+	slave_addr <<= 1;
+	// 0 for write, 1 for read
+	if (!read_or_write)
+	{
+		slave_addr &= ~1;
+	}
+	else
+	{
+		slave_addr |= 1;
+	}
+	p_i2c_handle->p_i2c_x->DR = slave_addr;
+}
+
 static void Manage_Acking(I2C_Register_Map_t *p_i2c_x, uint8_t enable)
 {
 	if (enable == ENABLE)

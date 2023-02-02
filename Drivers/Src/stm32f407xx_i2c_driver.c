@@ -54,73 +54,6 @@ void I2C_Peri_Clk_Ctrl(I2C_Register_Map_t *p_i2c_x, uint8_t enable)
 	}
 }
 
-void I2C_Errata_Reset(I2C_Handle_t *p_i2c_handle)
-{
-	/**
-	1. Disable the I2C peripheral by clearing the PE bit in I2Cx_CR1 register.
-	2. Configure the SCL and SDA I/Os as General Purpose Output Open-Drain, High level
-	(Write 1 to GPIOx_ODR).
-	3. Check SCL and SDA High level in GPIOx_IDR.
-	4. Configure the SDA I/O as General Purpose Output Open-Drain, Low level (Write 0 to
-	GPIOx_ODR).
-	5. Check SDA Low level in GPIOx_IDR.
-	6. Configure the SCL I/O as General Purpose Output Open-Drain, Low level (Write 0 to
-	GPIOx_ODR).
-	7. Check SCL Low level in GPIOx_IDR.
-	8. Configure the SCL I/O as General Purpose Output Open-Drain, High level (Write 1 to
-	GPIOx_ODR).
-	9. Check SCL High level in GPIOx_IDR.
-	10. Configure the SDA I/O as General Purpose Output Open-Drain , High level (Write 1 to
-	GPIOx_ODR).
-	11. Check SDA High level in GPIOx_IDR.
-	12. Configure the SCL and SDA I/Os as Alternate function Open-Drain.
-	13. Set SWRST bit in I2Cx_CR1 register.
-	14. Clear SWRST bit in I2Cx_CR1 register.
-	15. Enable the I2C peripheral by setting the PE bit in I2Cx_CR1 register.
-	**/
-	// PB11 is SDA, PB10 is SCL
-	I2C_Peripheral_Power_Switch(p_i2c_handle->p_i2c_x, OFF);
-	uint8_t dummy_val = 0;
-
-	GPIO_Pin_Config_t errata_config = {
-			10,
-			GPIO_MODE_OUT,
-			GPIO_SPEED_HIGH,
-			GPIO_PUPD_NONE,
-			GPIO_OUT_OD,
-			0
-	};
-	GPIO_Handle_t errata_handle = { GPIOB, errata_config };
-	GPIO_Init(&errata_handle);
-	errata_handle.gpio_pin_config.gpio_pin_num = 11;
-	GPIO_Init(&errata_handle);
-	GPIO_Write_To_Output_Pin(errata_handle.p_gpio_x, 10, 1);
-	GPIO_Write_To_Output_Pin(errata_handle.p_gpio_x, 11, 1);
-	dummy_val = GPIO_Read_From_Input_Pin(errata_handle.p_gpio_x, 10);
-	dummy_val = GPIO_Read_From_Input_Pin(errata_handle.p_gpio_x, 11);
-
-	GPIO_Write_To_Output_Pin(errata_handle.p_gpio_x, 11, 0);
-	dummy_val = GPIO_Read_From_Input_Pin(errata_handle.p_gpio_x, 11);
-
-	GPIO_Write_To_Output_Pin(errata_handle.p_gpio_x, 10, 0);
-	dummy_val = GPIO_Read_From_Input_Pin(errata_handle.p_gpio_x, 10);
-
-	GPIO_Write_To_Output_Pin(errata_handle.p_gpio_x, 10, 1);
-	dummy_val = GPIO_Read_From_Input_Pin(errata_handle.p_gpio_x, 10);
-
-	GPIO_Write_To_Output_Pin(errata_handle.p_gpio_x, 11, 1);
-	dummy_val = GPIO_Read_From_Input_Pin(errata_handle.p_gpio_x, 11);
-
-	errata_handle.gpio_pin_config.gpio_pin_mode = GPIO_MODE_ALT;
-	errata_handle.gpio_pin_config.gpio_pin_alt_fun_mode = 4;
-	GPIO_Init(&errata_handle);
-	errata_handle.gpio_pin_config.gpio_pin_num = 10;
-	GPIO_Init(&errata_handle);
-	p_i2c_handle->p_i2c_x->CR1 |= (1 << I2C_CR1_SWRST);
-	p_i2c_handle->p_i2c_x->CR1 &= ~(1 << I2C_CR1_SWRST);
-	// I2C_Peripheral_Power_Switch(p_i2c_handle->p_i2c_x, ON);
-}
-
 void I2C_Init(I2C_Handle_t *p_i2c_handle)
 {
 	// CLOCK CONFIGURATION
@@ -160,7 +93,7 @@ void I2C_Peripheral_Power_Switch(I2C_Register_Map_t *p_i2c_x, uint8_t on_or_off)
 	p_i2c_x->CR1 |= (1 << I2C_CR1_PE);
 }
 
-static void I2C_Generate_Start_Condition(I2C_Handle_t *p_i2c_handle)
+void I2C_Generate_Start_Condition(I2C_Handle_t *p_i2c_handle)
 {
 	p_i2c_handle->p_i2c_x->CR1 |= (1 << I2C_CR1_START);
 }
@@ -214,6 +147,53 @@ static void I2C_Write_Address_Byte(I2C_Handle_t *p_i2c_handle, uint8_t slave_add
 	p_i2c_handle->p_i2c_x->DR = slave_addr;
 }
 
+void I2C_Master_Receive(I2C_Handle_t *p_i2c_handle, uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr)
+{
+	// MASTER RECEIVER
+	// 1) Generate start condition (same as master send..)
+	I2C_Generate_Start_Condition(p_i2c_handle);
+
+	// 2) Wait for SB to indicate start condition created
+	while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_SB, I2C_SR1_CHECK));
+
+	// 3) Write slave address to DR with read bit (last bit 1)
+	I2C_Write_Address_Byte(p_i2c_handle, slave_addr, I2C_READ);
+	// wait for ADDR bit to set high. need to check SR2 as well (ADDR is in SR1)
+	while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_ADDR, I2C_SR1_CHECK));
+	if (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR2_TRA, I2C_SR2_CHECK)) {}
+
+	if (len == 1)
+	{
+		// NACK must be sent on first byte
+		Manage_Acking(p_i2c_handle->p_i2c_x, DISABLE);
+		while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_RXNE, I2C_SR1_CHECK));
+		I2C_Generate_Stop_Condition(p_i2c_handle);
+		*p_rx_buffer = p_i2c_handle->p_i2c_x->DR;
+	}
+	else
+	{
+		// 4) Wait for RxNE equal 1, meaning DR is full
+		while (len > 0)
+		{
+			while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_RXNE, I2C_SR1_CHECK));
+			if (len == 2)
+			{
+				// last byte when len = 1 must be NACK'd, so ACK must be disabled
+				Manage_Acking(p_i2c_handle->p_i2c_x, DISABLE);
+				I2C_Generate_Stop_Condition(p_i2c_handle);
+			}
+			*p_rx_buffer = p_i2c_handle->p_i2c_x->DR;
+			p_rx_buffer++;
+			len--;
+		}
+	}
+
+	if (p_i2c_handle->i2c_config.ack_ctrl == I2C_ACK_EN)
+	{
+		Manage_Acking(p_i2c_handle->p_i2c_x, ENABLE);
+	}
+}
+
 void I2C_Master_Send(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr)
 {
 	// MASTER TRANSMISSION
@@ -250,7 +230,8 @@ void I2C_Master_Send(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint32_t 
 	// once length becomes 0, wait for txe=1 and btf=1, then generate stop condition
 	while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_TXE, I2C_SR1_CHECK));
 	while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_BTF, I2C_SR1_CHECK));
-	I2C_Generate_Stop_Condition(p_i2c_handle);
+	if (sr == I2C_DISABLE_SR)
+		I2C_Generate_Stop_Condition(p_i2c_handle);
 }
 
 

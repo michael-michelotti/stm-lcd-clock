@@ -26,6 +26,17 @@
   #warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
 #endif
 
+typedef struct
+{
+	uint8_t seconds;
+	uint8_t minutes;
+	uint8_t hours;
+	uint8_t day;
+	uint8_t date;
+	uint8_t month;
+	uint8_t year;
+} DS3231_Time_t;
+
 int main(void)
 {
 	// configure I2C1 GPIO pins as SCL
@@ -93,9 +104,41 @@ int main(void)
 	 */
 
 	// want to try to write a control byte to address 0E, and see whether the RTC acks
+	// write the value 0x06, which will set the register pointer on the RTC
+	// request a byte, which should send me a year, where the first 4 bits are the year
 	uint8_t ds3231_slave_addr = 0b1101000;
-	uint8_t p_tx_buffer[] = {0x0E, 0b00011000};
-	I2C_Master_Send(&p_i2c_handle, p_tx_buffer, 2, ds3231_slave_addr, 0);
+	uint8_t p_tx_buffer[] = { 0x00, 0x31, 0x37, 0x64, 0x04, 0x01, 0x02, 0x23 };
+	// I2C_Master_Send(&p_i2c_handle, p_tx_buffer, 8, ds3231_slave_addr, 0);
+	// I2C_Master_Receive(&p_i2c_handle, p_rx_buffer, 1, ds3231_slave_addr);
+
+	// write 0 back into register pointer
+	I2C_Master_Send(&p_i2c_handle, p_tx_buffer, 1, ds3231_slave_addr, I2C_ENABLE_SR);
+	DS3231_Time_t my_time;
+	uint8_t p_rx_buffer[64];
+	// I2C_Generate_Start_Condition(&p_i2c_handle);
+	I2C_Master_Receive(&p_i2c_handle, p_rx_buffer, 7, ds3231_slave_addr, I2C_DISABLE_SR);
+	/*
+	I2C_Master_Receive(&p_i2c_handle, p_rx_buffer+0, 1, ds3231_slave_addr);
+	my_time.seconds = p_rx_buffer[0];
+
+	I2C_Master_Receive(&p_i2c_handle, p_rx_buffer+1, 1, ds3231_slave_addr);
+	my_time.minutes = p_rx_buffer[1];
+
+	I2C_Master_Receive(&p_i2c_handle, p_rx_buffer+2, 1, ds3231_slave_addr);
+	my_time.hours = p_rx_buffer[2];
+
+	I2C_Master_Receive(&p_i2c_handle, p_rx_buffer+3, 1, ds3231_slave_addr);
+	my_time.day = p_rx_buffer[3];
+
+	I2C_Master_Receive(&p_i2c_handle, p_rx_buffer+4, 1, ds3231_slave_addr);
+	my_time.date = p_rx_buffer[4];
+
+	I2C_Master_Receive(&p_i2c_handle, p_rx_buffer+5, 1, ds3231_slave_addr);
+	my_time.month = p_rx_buffer[5];
+
+	I2C_Master_Receive(&p_i2c_handle, p_rx_buffer+6, 1, ds3231_slave_addr);
+	my_time.year = p_rx_buffer[6];
+	*/
 
 	for(;;)
 	{

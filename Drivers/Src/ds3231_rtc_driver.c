@@ -7,6 +7,7 @@
 
 #include "ds3231_rtc_driver.h"
 
+static float Convert_Temp(uint8_t *p_rx_buffer);
 static DS3231_Full_Date_t Convert_Full_Date(uint8_t *p_rx_buffer);
 static DS3231_Full_Time_t Convert_Full_Time(uint8_t *p_rx_buffer);
 static uint8_t Convert_Seconds(uint8_t sec_byte);
@@ -185,7 +186,18 @@ DS3231_Datetime_t DS3231_Get_Full_Datetime(I2C_Handle_t *p_i2c_handle)
 	return datetime;
 }
 
-void DS3231_Get_Temp();
+float DS3231_Get_Temp(I2C_Handle_t *p_i2c_handle)
+{
+	uint8_t p_tx_buffer[1] = { DS3231_MSB_TEMP };
+	uint8_t p_rx_buffer[2];
+
+	// write register pointer
+	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 1, DS3231_SLAVE_ADDR, I2C_ENABLE_SR);
+	// read seven bytes - seconds, minutes, hours, day, date, month, year
+	I2C_Master_Receive(p_i2c_handle, p_rx_buffer, 2, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
+
+	return Convert_Temp(p_rx_buffer);
+}
 
 void DS3231_Set_12_24_Hour();
 void DS3231_Set_Seconds();
@@ -198,6 +210,23 @@ void DS3231_Set_Year();
 
 void DS3231_Set_Full_Date();
 void DS3231_Set_Full_Time();
+
+static float Convert_Temp(uint8_t *p_rx_buffer)
+{
+	float temp = 0;
+	float fractional = 0;
+	uint8_t thing = 0;
+	uint8_t temp_msb = *p_rx_buffer;
+	p_rx_buffer++;
+	uint8_t temp_lsb = *p_rx_buffer;
+
+	// bottom 2 bits of temp - fractional portion
+	thing = (temp_lsb >> 6);
+	fractional = thing / 4;
+	temp = temp_msb + fractional;
+
+	return temp;
+}
 
 static DS3231_Full_Time_t Convert_Full_Time(uint8_t *p_rx_buffer)
 {

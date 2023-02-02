@@ -134,7 +134,7 @@ DS3231_Full_Date_t DS3231_Get_Full_Date(I2C_Handle_t *p_i2c_handle);
 DS3231_Full_Time_t DS3231_Get_Full_Time(I2C_Handle_t *p_i2c_handle);
 DS3231_Datetime_t DS3231_Get_Full_Datetime(I2C_Handle_t *p_i2c_handle);
 
-void DS3231_Get_Temp();
+float DS3231_Get_Temp(I2C_Handle_t *p_i2c_handle);
 
 void DS3231_Set_12_24_Hour();
 void DS3231_Set_Seconds();

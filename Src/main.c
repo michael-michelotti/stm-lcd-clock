@@ -71,6 +71,7 @@ int main(void)
 	I2C_Init(&p_i2c_handle);
 
 	DS3231_Datetime_t datetime = DS3231_Get_Full_Datetime(&p_i2c_handle);
+	float temp = DS3231_Get_Temp(&p_i2c_handle);
 
 	for(;;);
 }

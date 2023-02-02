@@ -140,7 +140,7 @@ void DS3231_Set_Seconds(I2C_Handle_t *p_i2c_handle, uint8_t seconds);
 void DS3231_Set_Minutes(I2C_Handle_t *p_i2c_handle, uint8_t minutes);
 void DS3231_Set_Hours(I2C_Handle_t *p_i2c_handle, DS3231_Hours_t hours);
 void DS3231_Set_Day(I2C_Handle_t *p_i2c_handle, DS3231_DOW_t day_of_week);
-void DS3231_Set_Date();
+void DS3231_Set_Date(I2C_Handle_t *p_i2c_handle, uint8_t date);
 void DS3231_Set_Month();
 void DS3231_Set_Year();
 

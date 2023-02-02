@@ -8,6 +8,7 @@
 #include "ds3231_rtc_driver.h"
 
 static uint8_t Convert_Binary_To_BCD_Seconds_Minutes(uint8_t binary_byte);
+static uint8_t Convert_Binary_To_BCD_Date(uint8_t binary_byte);
 static uint8_t Convert_Hours_12_24(uint8_t current_byte, DS3231_12_24_Hour_t hour_mode);
 static float Convert_Temp(uint8_t *p_rx_buffer);
 static DS3231_Full_Date_t Convert_Full_Date(uint8_t *p_rx_buffer);
@@ -291,7 +292,12 @@ void DS3231_Set_Day(I2C_Handle_t *p_i2c_handle, DS3231_DOW_t day_of_week)
 	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 2, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
 }
 
-void DS3231_Set_Date();
+void DS3231_Set_Date(I2C_Handle_t *p_i2c_handle, uint8_t date)
+{
+	uint8_t p_tx_buffer[2] = { DS3231_DATE, Convert_Binary_To_BCD_Date(date) };
+	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 2, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
+}
+
 void DS3231_Set_Month();
 void DS3231_Set_Year();
 
@@ -448,6 +454,17 @@ static uint8_t Convert_Year(uint8_t year_byte)
 	// tens place seconds (bit 4)
 	uint8_t tens_place = (year_byte >> 4)& 0xF;
 	return zeroes_place + (tens_place * 10);
+}
+
+static uint8_t Convert_Binary_To_BCD_Date(uint8_t binary_byte)
+{
+	uint8_t low_nybble;
+	uint8_t high_nybble;
+
+	low_nybble = binary_byte % 10;
+	high_nybble = binary_byte / 10;
+
+	return (high_nybble << 4) | (low_nybble & 0xF);
 }
 
 static uint8_t Convert_Binary_To_BCD_Seconds_Minutes(uint8_t binary_byte)

@@ -255,9 +255,34 @@ void DS3231_Set_Minutes(I2C_Handle_t *p_i2c_handle, uint8_t minutes)
 	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 2, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
 }
 
-void DS3231_Set_Hours()
+void DS3231_Set_Hours(I2C_Handle_t *p_i2c_handle, DS3231_Hours_t hours)
 {
+	uint8_t hour_byte = 0;
 
+	hour_byte = Convert_Binary_To_BCD(hour_byte, hours.hour);
+	if (hours.hour_12_24 == DS3231_12_HOUR)
+	{
+		// set 12/24 hour bit
+		hour_byte |= (1 << DS3231_12_24_BIT);
+		if (hours.am_pm == DS3231_AM)
+		{
+			// reset am/pm bit
+			hour_byte &= ~(1 << DS3231_AM_PM_BIT);
+		}
+		else
+		{
+			// set am/pm bit
+			hour_byte |= (1 << DS3231_AM_PM_BIT);
+		}
+	}
+	else
+	{
+		// reset 12/24 hour bit
+		hour_byte &= ~(1 << DS3231_12_24_BIT);
+	}
+
+	uint8_t p_tx_buffer[2] = { DS3231_HOURS, hour_byte };
+	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 2, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
 }
 
 void DS3231_Set_Day();
@@ -372,12 +397,17 @@ static DS3231_Hours_t Convert_Hours(uint8_t hour_byte)
 	hour_struct.hour_12_24 = (hour_byte >> DS3231_12_24_BIT) & 1;
 
 	if (hour_struct.hour_12_24 == DS3231_12_HOUR)
+	{
 		hour_struct.am_pm = (hour_byte >> DS3231_AM_PM_BIT) & 1;
+		hour_tens = (hour_byte >> 4) & 0x1;
+	}
 	else
+	{
 		hour_struct.am_pm = DS3231_NO_AM_PM;
+		hour_tens = (hour_byte >> 4) & 0x3;
+	}
 
 	// convert hour BCD to binary
-	hour_tens = (hour_byte >> 4) & 1;
 	hour_struct.hour = (hour_byte & 0xF) + (hour_tens * 10);
 
 	return hour_struct;

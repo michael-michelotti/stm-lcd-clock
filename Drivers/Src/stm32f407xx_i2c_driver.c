@@ -19,8 +19,6 @@ static void I2C_Set_CR2_Freq(I2C_Register_Map_t *p_i2c_x, uint32_t sys_clk_freq)
 static void I2C_Set_CCR(I2C_Handle_t *p_i2c_handle, uint32_t sys_clk_freq);
 static void I2C_Configure_TRISE(I2C_Handle_t *p_i2c_handle, uint32_t sys_clk_freq);
 static void I2C_Set_Own_Address(I2C_Handle_t *p_i2c_handle);
-static uint32_t Translate_AHB_Prescaler(uint8_t bit_value);
-static uint32_t Translate_APB_Prescaler(uint8_t bit_value);
 
 void I2C_Peri_Clk_Ctrl(I2C_Register_Map_t *p_i2c_x, uint8_t enable)
 {
@@ -255,8 +253,8 @@ static void I2C_Set_CCR(I2C_Handle_t *p_i2c_handle, uint32_t sys_clk_freq)
 {
 	// all I2C peripherals on APB1 - calculate APB1 frequency
 	uint32_t ccr;
-	uint32_t ahb_prescaler = RCC_Get_AHB_Prescaler(ahb_prescaler);
-	uint32_t apb1_prescaler = RCC_Get_APB_Prescaler(apb1_prescaler);
+	uint32_t ahb_prescaler = RCC_Get_AHB_Prescaler();
+	uint32_t apb1_prescaler = RCC_Get_APB_Prescaler();
 	uint32_t apb1_clk = sys_clk_freq / ahb_prescaler / apb1_prescaler;
 
 	if (p_i2c_handle->i2c_config.scl_speed <= I2C_SPEED_SM)

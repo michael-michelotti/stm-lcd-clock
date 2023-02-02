@@ -59,14 +59,10 @@ int main(void)
 	I2C_Handle_t p_i2c_handle = {I2C2, config, NULL, NULL, 0, 0, 0, 21, 0, 0};
 	I2C_Init(&p_i2c_handle);
 
-	DS3231_12_24_Hour_t fmt = DS3231_12_HOUR;
-	DS3231_AM_PM_t am_pm = DS3231_PM;
-	uint8_t hour = 11;
-	DS3231_Hours_t set_hours = { fmt, am_pm, hour };
+	DS3231_DOW_t dow = THU;
+	DS3231_Set_Day(&p_i2c_handle, dow);
 
-	DS3231_Set_Hours(&p_i2c_handle, set_hours);
-
-	DS3231_Hours_t out = DS3231_Get_Hours(&p_i2c_handle);
+	DS3231_DOW_t out = DS3231_Get_Day_Of_Week(&p_i2c_handle);
 
 	for(;;);
 }

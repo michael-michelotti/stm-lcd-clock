@@ -285,7 +285,12 @@ void DS3231_Set_Hours(I2C_Handle_t *p_i2c_handle, DS3231_Hours_t hours)
 	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 2, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
 }
 
-void DS3231_Set_Day();
+void DS3231_Set_Day(I2C_Handle_t *p_i2c_handle, DS3231_DOW_t day_of_week)
+{
+	uint8_t p_tx_buffer[2] = { DS3231_DAY, day_of_week };
+	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 2, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
+}
+
 void DS3231_Set_Date();
 void DS3231_Set_Month();
 void DS3231_Set_Year();

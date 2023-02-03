@@ -38,6 +38,10 @@
 #define DS3231_12_24_BIT			6
 #define DS3231_CENTURY_BIT			7
 
+#define FULL_DATE_LEN				4
+#define FULL_TIME_LEN				3
+#define FULL_DATETIME_LEN			( (FULL_DATE_LEN) + (FULL_TIME_LEN) )
+
 typedef struct
 {
 	uint8_t seconds;
@@ -92,7 +96,7 @@ typedef enum
 	THU,
 	FRI,
 	SAT
-} DS3231_DOW_t;
+} DS3231_Day_t;
 
 typedef struct
 {
@@ -102,10 +106,10 @@ typedef struct
 
 typedef struct
 {
-	uint8_t year;
-	uint8_t month;
+	DS3231_Day_t day;
 	uint8_t date;
-	DS3231_DOW_t dow;
+	uint8_t month;
+	uint8_t year;
 } DS3231_Full_Date_t;
 
 typedef struct
@@ -113,25 +117,25 @@ typedef struct
 	uint8_t seconds;
 	uint8_t minutes;
 	DS3231_Hours_t hours;
-} DS3231_Full_Time_t;
+} DS3231_Time_t;
 
 typedef struct
 {
+	DS3231_Time_t time;
 	DS3231_Full_Date_t date;
-	DS3231_Full_Time_t time;
 } DS3231_Datetime_t;
 
 uint8_t DS3231_Get_Seconds(I2C_Handle_t *p_i2c_handle);
 uint8_t DS3231_Get_Minutes(I2C_Handle_t *p_i2c_handle);
 DS3231_Hours_t DS3231_Get_Hours(I2C_Handle_t *p_i2c_handle);
-DS3231_DOW_t DS3231_Get_Day_Of_Week(I2C_Handle_t *p_i2c_handle);
+DS3231_Day_t DS3231_Get_Day_Of_Week(I2C_Handle_t *p_i2c_handle);
 uint8_t DS3231_Get_Date(I2C_Handle_t *p_i2c_handle);
 uint8_t DS3231_Get_Month(I2C_Handle_t *p_i2c_handle);
 uint8_t DS3231_Get_Century(I2C_Handle_t *p_i2c_handle);
 DS3231_Month_Century_t DS3231_Get_Month_Century(I2C_Handle_t *p_i2c_handle);
 uint8_t DS3231_Get_Year(I2C_Handle_t *p_i2c_handle);
 DS3231_Full_Date_t DS3231_Get_Full_Date(I2C_Handle_t *p_i2c_handle);
-DS3231_Full_Time_t DS3231_Get_Full_Time(I2C_Handle_t *p_i2c_handle);
+DS3231_Time_t DS3231_Get_Full_Time(I2C_Handle_t *p_i2c_handle);
 DS3231_Datetime_t DS3231_Get_Full_Datetime(I2C_Handle_t *p_i2c_handle);
 float DS3231_Get_Temp(I2C_Handle_t *p_i2c_handle);
 
@@ -139,12 +143,13 @@ void DS3231_Convert_Hour_Format(I2C_Handle_t *p_i2c_handle, DS3231_12_24_Hour_t 
 void DS3231_Set_Seconds(I2C_Handle_t *p_i2c_handle, uint8_t seconds);
 void DS3231_Set_Minutes(I2C_Handle_t *p_i2c_handle, uint8_t minutes);
 void DS3231_Set_Hours(I2C_Handle_t *p_i2c_handle, DS3231_Hours_t hours);
-void DS3231_Set_Day(I2C_Handle_t *p_i2c_handle, DS3231_DOW_t day_of_week);
+void DS3231_Set_Day(I2C_Handle_t *p_i2c_handle, DS3231_Day_t day);
 void DS3231_Set_Date(I2C_Handle_t *p_i2c_handle, uint8_t date);
 void DS3231_Set_Month(I2C_Handle_t *p_i2c_handle, uint8_t month);
 void DS3231_Set_Year(I2C_Handle_t *p_i2c_handle, uint8_t year);
 
-void DS3231_Set_Full_Date();
-void DS3231_Set_Full_Time();
+void DS3231_Set_Full_Date(I2C_Handle_t *p_i2c_handle, DS3231_Full_Date_t full_date);
+void DS3231_Set_Full_Time(I2C_Handle_t *p_i2c_handle, DS3231_Time_t full_time);
+void DS3231_Set_Full_Datetime(I2C_Handle_t *p_i2c_handle, DS3231_Datetime_t datetime);
 
 #endif /* INC_DS3231_RTC_DRIVER_H_ */

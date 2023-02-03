@@ -10,16 +10,17 @@
 #include <stdlib.h>
 
 /*************** CONVERSION FUNCTIONS FROM DS3231 REGISTER FORMAT *****************/
-static float Convert_Temp_From_DS3231(uint8_t *p_rx_buffer);
-static DS3231_Full_Date_t Convert_Full_Date_From_DS3231(uint8_t *p_rx_buffer);
-static DS3231_Time_t Convert_Full_Time_From_DS3231(uint8_t *p_rx_buffer);
 static uint8_t Convert_Seconds_From_DS3231(uint8_t sec_byte);
 static uint8_t Convert_Minutes_From_DS3231(uint8_t min_byte);
 static DS3231_Hours_t Convert_Hours_From_DS3231(uint8_t hour_byte);
-static DS3231_Day_t Convert_DOW_From_DS3231(uint8_t dow_byte);
-static uint8_t Convert_Month_From_DS3231(uint8_t month_byte);
+static DS3231_Day_t Convert_Day_From_DS3231(uint8_t dow_byte);
 static uint8_t Convert_Date_From_DS3231(uint8_t date_byte);
+static uint8_t Convert_Month_From_DS3231(uint8_t month_byte);
 static uint8_t Convert_Year_From_DS3231(uint8_t year_byte);
+static DS3231_Time_t Convert_Full_Time_From_DS3231(uint8_t *p_rx_buffer);
+static DS3231_Full_Date_t Convert_Full_Date_From_DS3231(uint8_t *p_rx_buffer);
+static DS3231_Datetime_t Convert_Datetime_From_DS3231(uint8_t *p_rx_buffer);
+static float Convert_Temp_From_DS3231(uint8_t *p_rx_buffer);
 
 /*************** CONVERSION FUNCTIONS TO DS3231 REGISTER FORMAT *****************/
 static uint8_t Convert_Seconds_To_DS3231(uint8_t seconds);
@@ -41,12 +42,10 @@ static uint8_t Convert_BCD_To_Binary(uint8_t bcd_byte);
 /*************** CLOCK MODULE GETTER FUNCTIONS *****************/
 uint8_t DS3231_Get_Seconds(I2C_Handle_t *p_i2c_handle)
 {
-	uint8_t p_tx_buffer[1] = { DS3231_SECONDS };
+	uint8_t *p_tx_buffer = (uint8_t *)DS3231_SECONDS;
 	uint8_t p_rx_buffer[1];
 
-	// write seconds register into register pointer
 	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 1, DS3231_SLAVE_ADDR, I2C_ENABLE_SR);
-	// read one byte
 	I2C_Master_Receive(p_i2c_handle, p_rx_buffer, 1, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
 
 	return Convert_Seconds_From_DS3231(*p_rx_buffer);
@@ -88,7 +87,7 @@ DS3231_Day_t DS3231_Get_Day_Of_Week(I2C_Handle_t *p_i2c_handle)
 	// read one byte
 	I2C_Master_Receive(p_i2c_handle, p_rx_buffer, 1, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
 
-	return Convert_DOW_From_DS3231(*p_rx_buffer);
+	return Convert_Day_From_DS3231(*p_rx_buffer);
 }
 
 uint8_t DS3231_Get_Date(I2C_Handle_t *p_i2c_handle)
@@ -162,7 +161,7 @@ DS3231_Full_Date_t DS3231_Get_Full_Date(I2C_Handle_t *p_i2c_handle)
 	I2C_Master_Receive(p_i2c_handle, p_rx_buffer, 4, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
 
 	// index 0 = dow, 1 = day of month, 2 = month, 3 = year
-	full_date.day = Convert_DOW_From_DS3231(p_rx_buffer[0]);
+	full_date.day = Convert_Day_From_DS3231(p_rx_buffer[0]);
 	full_date.date = Convert_Date_From_DS3231(p_rx_buffer[1]);
 	full_date.month = Convert_Month_From_DS3231(p_rx_buffer[2]);
 	full_date.year = Convert_Year_From_DS3231(p_rx_buffer[3]);
@@ -193,17 +192,13 @@ DS3231_Datetime_t DS3231_Get_Full_Datetime(I2C_Handle_t *p_i2c_handle)
 {
 	uint8_t p_tx_buffer[1] = { DS3231_SECONDS };
 	uint8_t p_rx_buffer[7];
-	DS3231_Datetime_t datetime;
 
 	// write register pointer
 	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 1, DS3231_SLAVE_ADDR, I2C_ENABLE_SR);
 	// read seven bytes - seconds, minutes, hours, day, date, month, year
 	I2C_Master_Receive(p_i2c_handle, p_rx_buffer, 7, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
 
-	datetime.time = Convert_Full_Time_From_DS3231(p_rx_buffer);
-	datetime.date = Convert_Full_Date_From_DS3231(p_rx_buffer+FULL_TIME_LEN);
-
-	return datetime;
+	return Convert_Datetime_From_DS3231(p_rx_buffer);
 }
 
 float DS3231_Get_Temp(I2C_Handle_t *p_i2c_handle)
@@ -224,46 +219,6 @@ float DS3231_Get_Temp(I2C_Handle_t *p_i2c_handle)
 /*************** CLOCK MODULE SETTER FUNCTIONS *****************/
 /***************************************************************/
 /***************************************************************/
-
-void DS3231_Convert_Hour_Format(I2C_Handle_t *p_i2c_handle, DS3231_12_24_Hour_t new_mode)
-{
-	DS3231_12_24_Hour_t current_mode;
-	uint8_t current_hour_byte;
-	uint8_t new_hour_byte;
-
-	// receive current hours byte first
-	uint8_t p_tx_buffer[2] = { DS3231_HOURS, 0 };
-	uint8_t p_rx_buffer[1];
-	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 1, DS3231_SLAVE_ADDR, I2C_ENABLE_SR);
-	I2C_Master_Receive(p_i2c_handle, p_rx_buffer, 1, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
-
-	current_hour_byte = *p_rx_buffer;
-	current_mode = ((current_hour_byte >> DS3231_12_24_BIT) & 1);
-
-	if (new_mode == current_mode)
-	{
-		// hours are already in the desired format. do nothing.
-		return;
-	}
-	else
-	{
-		// if 12/24 bit is not set to desired mode, set it and calculate new hour value
-		if (current_mode == DS3231_12_HOUR)
-		{
-			// calculate new hour value
-			new_hour_byte = Convert_Hours_12_24(current_hour_byte, DS3231_24_HOUR);
-		}
-		else
-		{
-			// calculate new hour value
-			new_hour_byte = Convert_Hours_12_24(current_hour_byte, DS3231_12_HOUR);
-		}
-	}
-	// rewrite hour register pointer to clock module
-	p_tx_buffer[1] = new_hour_byte;
-	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 2, DS3231_SLAVE_ADDR, I2C_ENABLE_SR);
-}
-
 
 void DS3231_Set_Seconds(I2C_Handle_t *p_i2c_handle, uint8_t seconds)
 {
@@ -331,50 +286,49 @@ void DS3231_Set_Full_Datetime(I2C_Handle_t *p_i2c_handle, DS3231_Datetime_t date
 	free(datetime_bytes);
 }
 
+void DS3231_Convert_Hour_Format(I2C_Handle_t *p_i2c_handle, DS3231_12_24_Hour_t new_mode)
+{
+	DS3231_12_24_Hour_t current_mode;
+	uint8_t current_hour_byte;
+	uint8_t new_hour_byte;
+
+	// receive current hours byte first
+	uint8_t p_tx_buffer[2] = { DS3231_HOURS, 0 };
+	uint8_t p_rx_buffer[1];
+	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 1, DS3231_SLAVE_ADDR, I2C_ENABLE_SR);
+	I2C_Master_Receive(p_i2c_handle, p_rx_buffer, 1, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
+
+	current_hour_byte = *p_rx_buffer;
+	current_mode = ((current_hour_byte >> DS3231_12_24_BIT) & 1);
+
+	if (new_mode == current_mode)
+	{
+		// hours are already in the desired format. do nothing.
+		return;
+	}
+	else
+	{
+		// if 12/24 bit is not set to desired mode, set it and calculate new hour value
+		if (current_mode == DS3231_12_HOUR)
+		{
+			// calculate new hour value
+			new_hour_byte = Convert_Hours_12_24(current_hour_byte, DS3231_24_HOUR);
+		}
+		else
+		{
+			// calculate new hour value
+			new_hour_byte = Convert_Hours_12_24(current_hour_byte, DS3231_12_HOUR);
+		}
+	}
+	// rewrite hour register pointer to clock module
+	p_tx_buffer[1] = new_hour_byte;
+	I2C_Master_Send(p_i2c_handle, p_tx_buffer, 2, DS3231_SLAVE_ADDR, I2C_ENABLE_SR);
+}
+
+
 /*************** PRIVATE UTILITY FUNCTIONS *****************/
 
 /*************** CONVERSION FUNCTIONS FROM DS3231 REGISTER FORMAT *****************/
-static float Convert_Temp_From_DS3231(uint8_t *p_rx_buffer)
-{
-	float temp = 0;
-	float fractional = 0;
-	uint8_t thing = 0;
-	uint8_t temp_msb = *p_rx_buffer;
-	p_rx_buffer++;
-	uint8_t temp_lsb = *p_rx_buffer;
-
-	// bottom 2 bits of temp - fractional portion
-	thing = (temp_lsb >> 6);
-	fractional = thing / 4;
-	temp = temp_msb + fractional;
-
-	return temp;
-}
-
-static DS3231_Time_t Convert_Full_Time_From_DS3231(uint8_t *p_rx_buffer)
-{
-	DS3231_Time_t time;
-	time.seconds = Convert_Seconds_From_DS3231(*p_rx_buffer);
-	p_rx_buffer++;
-	time.minutes = Convert_Minutes_From_DS3231(*p_rx_buffer);
-	p_rx_buffer++;
-	time.hours = Convert_Hours_From_DS3231(*p_rx_buffer);
-	return time;
-}
-
-static DS3231_Full_Date_t Convert_Full_Date_From_DS3231(uint8_t *p_rx_buffer)
-{
-	DS3231_Full_Date_t date;
-	date.day = Convert_DOW_From_DS3231(*p_rx_buffer);
-	p_rx_buffer++;
-	date.date = Convert_Date_From_DS3231(*p_rx_buffer);
-	p_rx_buffer++;
-	date.month = Convert_Month_From_DS3231(*p_rx_buffer);
-	p_rx_buffer++;
-	date.year = Convert_Year_From_DS3231(*p_rx_buffer);
-	return date;
-}
-
 static uint8_t Convert_Seconds_From_DS3231(uint8_t sec_byte)
 {
 	return Convert_BCD_To_Binary(sec_byte);
@@ -409,36 +363,68 @@ static DS3231_Hours_t Convert_Hours_From_DS3231(uint8_t hour_byte)
 	return hour_struct;
 }
 
-static DS3231_Day_t Convert_DOW_From_DS3231(uint8_t dow_byte)
+static DS3231_Day_t Convert_Day_From_DS3231(uint8_t dow_byte)
 {
 	return dow_byte & 0x7;
 }
 
-static uint8_t Convert_Month_From_DS3231(uint8_t month_byte)
-{
-	// zeroes place seconds (bottom 4 bits)
-	uint8_t zeroes_place = month_byte & 0xF;
-	// tens place seconds (bit 4)
-	uint8_t tens_place = (month_byte >> 4)& 0x1;
-	return zeroes_place + (tens_place * 10);
-}
-
 static uint8_t Convert_Date_From_DS3231(uint8_t date_byte)
 {
-	// zeroes place seconds (bottom 4 bits)
-	uint8_t zeroes_place = date_byte & 0xF;
-	// tens place seconds (bits 4-5)
-	uint8_t tens_place = (date_byte >> 4)& 0x3;
-	return zeroes_place + (tens_place * 10);
+	return Convert_BCD_To_Binary(date_byte);
+}
+
+static uint8_t Convert_Month_From_DS3231(uint8_t month_byte)
+{
+	return Convert_BCD_To_Binary(month_byte);
 }
 
 static uint8_t Convert_Year_From_DS3231(uint8_t year_byte)
 {
-	// zeroes place seconds (bottom 4 bits)
-	uint8_t zeroes_place = year_byte & 0xF;
-	// tens place seconds (bit 4)
-	uint8_t tens_place = (year_byte >> 4)& 0xF;
-	return zeroes_place + (tens_place * 10);
+	return Convert_BCD_To_Binary(year_byte);
+}
+
+static DS3231_Time_t Convert_Full_Time_From_DS3231(uint8_t *p_rx_buffer)
+{
+	DS3231_Time_t time;
+	time.seconds = Convert_Seconds_From_DS3231(p_rx_buffer[0]);
+	time.minutes = Convert_Minutes_From_DS3231(p_rx_buffer[1]);
+	time.hours = Convert_Hours_From_DS3231(p_rx_buffer[2]);
+	return time;
+}
+
+static DS3231_Full_Date_t Convert_Full_Date_From_DS3231(uint8_t *p_rx_buffer)
+{
+	DS3231_Full_Date_t date;
+	date.day = Convert_Day_From_DS3231(p_rx_buffer[0]);
+	date.date = Convert_Date_From_DS3231(p_rx_buffer[1]);
+	date.month = Convert_Month_From_DS3231(p_rx_buffer[2]);
+	date.year = Convert_Year_From_DS3231(p_rx_buffer[3]);
+	return date;
+}
+
+static DS3231_Datetime_t Convert_Datetime_From_DS3231(uint8_t *p_rx_buffer)
+{
+	DS3231_Datetime_t datetime;
+	datetime.time = Convert_Full_Time_From_DS3231(p_rx_buffer);
+	datetime.date = Convert_Full_Date_From_DS3231(p_rx_buffer+FULL_TIME_LEN);
+	return datetime;
+}
+
+static float Convert_Temp_From_DS3231(uint8_t *p_rx_buffer)
+{
+	float temp = 0;
+	float fractional = 0;
+	uint8_t thing = 0;
+	uint8_t temp_msb = *p_rx_buffer;
+	p_rx_buffer++;
+	uint8_t temp_lsb = *p_rx_buffer;
+
+	// bottom 2 bits of temp - fractional portion
+	thing = (temp_lsb >> 6);
+	fractional = thing / 4;
+	temp = temp_msb + fractional;
+
+	return temp;
 }
 
 /*************** CONVERSION FUNCTIONS TO DS3231 REGISTER FORMAT *****************/

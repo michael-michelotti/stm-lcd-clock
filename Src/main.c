@@ -60,9 +60,20 @@ int main(void)
 	I2C_Init(&p_i2c_handle);
 
 	uint8_t year = 23;
+	uint8_t seconds = 45;
+	uint8_t minutes = 20;
+	DS3231_Hours_t hours = { 1, 1, 6 };
+	uint8_t date = 2;
+	uint8_t month = 2;
+	uint8_t dow = WED;
+	DS3231_Set_Seconds(&p_i2c_handle, seconds);
+	DS3231_Set_Minutes(&p_i2c_handle, minutes);
+	DS3231_Set_Hours(&p_i2c_handle, hours);
+	DS3231_Set_Date(&p_i2c_handle, date);
+	DS3231_Set_Month(&p_i2c_handle, month);
 	DS3231_Set_Year(&p_i2c_handle, year);
 
-	uint8_t out = DS3231_Get_Year(&p_i2c_handle);
+	DS3231_Datetime_t out = DS3231_Get_Full_Datetime(&p_i2c_handle);
 
 	for(;;);
 }

@@ -135,7 +135,7 @@ DS3231_Full_Time_t DS3231_Get_Full_Time(I2C_Handle_t *p_i2c_handle);
 DS3231_Datetime_t DS3231_Get_Full_Datetime(I2C_Handle_t *p_i2c_handle);
 float DS3231_Get_Temp(I2C_Handle_t *p_i2c_handle);
 
-void DS3231_Set_12_24_Hour(I2C_Handle_t *p_i2c_handle, DS3231_12_24_Hour_t hour_mode);
+void DS3231_Convert_Hour_Format(I2C_Handle_t *p_i2c_handle, DS3231_12_24_Hour_t hour_mode);
 void DS3231_Set_Seconds(I2C_Handle_t *p_i2c_handle, uint8_t seconds);
 void DS3231_Set_Minutes(I2C_Handle_t *p_i2c_handle, uint8_t minutes);
 void DS3231_Set_Hours(I2C_Handle_t *p_i2c_handle, DS3231_Hours_t hours);

@@ -61,7 +61,7 @@ int main(void)
 
 	uint8_t year = 23;
 	uint8_t seconds = 45;
-	uint8_t minutes = 29;
+	uint8_t minutes = 53;
 	DS3231_Hours_t hours = { 0, 2, 21 };
 	uint8_t date = 2;
 	uint8_t month = 2;

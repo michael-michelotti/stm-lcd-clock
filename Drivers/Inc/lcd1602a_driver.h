@@ -75,6 +75,7 @@ typedef enum
 void LCD_Display_Str(char *str);
 void LCD_Initialize();
 void LCD_Power_Switch(uint8_t on_or_off);
+void LCD_Set_Cursor(uint8_t row, uint8_t column);
 void LCD_Backlight_Power_Switch(uint8_t on_or_off);
 void LCD_Display_Char(uint8_t row, uint8_t col, char ch);
 void LCD_Update_Time(DS3231_Time_t time, uint8_t row, uint8_t col);

@@ -110,6 +110,20 @@ void LCD_Initialize()
 
 }
 
+void LCD_Set_Cursor(uint8_t row, uint8_t column)
+{
+	uint8_t ddram_addr = 0;
+	if (column == 2)
+	{
+		// most significant bit needs to be set for 2nd column
+		ddram_addr |= (1 << 6);
+	}
+	// row number is 4 bits, 0 through F for 1 to 16
+	ddram_addr |= ((row-1) & 0xF);
+
+	set_ddram_addr(ddram_addr);
+}
+
 void LCD_Display_Str(char *str)
 {
 	char curr;

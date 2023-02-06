@@ -34,7 +34,7 @@ int main(void)
 
 	char *my_str = "Hello, world!\0";
 
-	LCD_Display_Char(0, 0, 'E');
+	LCD_Set_Cursor(3, 2);
 	LCD_Display_Str(my_str);
 
 	LCD_Power_Switch(OFF);

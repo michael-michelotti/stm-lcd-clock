@@ -22,6 +22,7 @@
 
 #include "stm32f407xx.h"
 #include "ds3231_rtc_driver.h"
+#include "lcd1602a_driver.h"
 
 #if !defined(__SOFT_FP__) && defined(__ARM_FP)
   #warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
@@ -29,39 +30,13 @@
 
 int main(void)
 {
-	// configure I2C1 GPIO pins as SCL
-	GPIO_Pin_Config_t scl_config = {
-			10,					// PB8 is I2C1 SCL
-			GPIO_MODE_ALT,
-			GPIO_SPEED_HIGH,
-			GPIO_PUPD_NONE,
-			GPIO_OUT_OD,		// I2C pins must be configured open drain with a pull-up
-			4					// Alt function 4 is SCL on PB6
-	};
+	LCD_Initialize();
 
-	GPIO_Handle_t scl_handle = { GPIOB, scl_config };
-
-	// configure I2C1 GPIO pins as SDA
-	GPIO_Pin_Config_t sda_config = {
-			11,					// PB7 is I2C1 SDA
-			GPIO_MODE_ALT,
-			GPIO_SPEED_HIGH,
-			GPIO_PUPD_NONE,
-			GPIO_OUT_OD,		// I2C pins must be configured open drain with a pull-up
-			4					// Alt function 4 is SDA on PB7
-	};
-	GPIO_Handle_t sda_handle = { GPIOB, sda_config };
-
-	GPIO_Init(&scl_handle);
-	GPIO_Init(&sda_handle);
-
-	I2C_Config_t config = {I2C_SPEED_SM, 62, I2C_ACK_EN, I2C_FM_DUTY_2};
-	I2C_Handle_t p_i2c_handle = {I2C2, config, NULL, NULL, 0, 0, 0, 21, 0, 0};
-	I2C_Init(&p_i2c_handle);
-
-	uint8_t mins = DS3231_Get_Minutes(&p_i2c_handle);
-	uint8_t year = DS3231_Get_Year(&p_i2c_handle);
-	DS3231_Datetime_t dt = DS3231_Get_Full_Datetime(&p_i2c_handle);
+	LCD_Display_Char(0, 0, 'H');
+	LCD_Display_Char(0, 0, 'e');
+	LCD_Display_Char(0, 0, 'l');
+	LCD_Display_Char(0, 0, 'l');
+	LCD_Display_Char(0, 0, 'o');
 
 	for(;;);
 }

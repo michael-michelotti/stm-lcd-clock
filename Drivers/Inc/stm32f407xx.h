@@ -17,6 +17,8 @@
 #define DISABLE 		0
 #define ON				1
 #define OFF				0
+#define HIGH			1
+#define LOW				0
 #define SET				ENABLE
 #define RESET			DISABLE
 #define I2C_WRITE		0

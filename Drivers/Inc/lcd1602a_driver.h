@@ -11,40 +11,51 @@
 #include "stdint.h"
 #include "ds3231_rtc_driver.h"
 
-// LCD PIN NUMBER MACROS
-#define VSS				0		// high voltage for entire module
-#define VDD				1		// ground voltage for entire module
-#define VO				2		// between VSS and VDD - controls contrast level (with potentiometer)
-#define RS				3		// read select - low means module command, high means read or write
-#define RW				4		// read or write - determines r/w whenever read select is low
-#define E				5		// starts read or write process (will always be write here)
-#define DB0				6		// data line 1
-#define DB1				7		// data line 2
-#define DB2				8		// data line 3
-#define DB3				9		// data line 4
-#define DB4				10		// data line 5
-#define DB5				11		// data line 6
-#define DB6				12		// data line 7
-#define DB7				13		// data line 8
-#define LCD_HI			14		// high voltage for lcd backlight
-#define LCD_LO			15		// ground for lcd backlight
+#define LCD_GPIO_PORT		GPIOA
+// GPIO PIN NUMBERS
+#define RS_GPIO_PIN			1
+#define E_GPIO_PIN			2
+#define DB4_GPIO_PIN		3
+#define DB5_GPIO_PIN		4
+#define DB6_GPIO_PIN		5
+#define DB7_GPIO_PIN		6
 
-// PIN NUMBER ON GPIOD
-#define RS_GPIO_PIN		1
-#define E_GPIO_PIN		2
-#define DB4_GPIO_PIN	3
-#define DB5_GPIO_PIN	4
-#define DB6_GPIO_PIN	5
-#define DB7_GPIO_PIN	6
+// ENTRY MODE SET CONFIGURATION BITS
+#define LCD_INCREMENT		1
+#define LCD_DECREMENT		0
+#define LCD_SHIFT			1
+#define LCD_NO_SHIFT		0
 
-// Enumeration of LCD commands
+// ENTRY DISPLAY AND CURSOR CONFIG BITS
+#define LCD_DISP_OFF		0
+#define LCD_DISP_ON			1
+#define LCD_CURSOR_OFF		0
+#define LCD_CURSOR_ON		1
+#define LCD_BLINK_OFF		0
+#define LCD_BLINK_ON		1
+
+#define LCD_4_BIT			0
+#define LCD_8_BIT			1
+#define LCD_1_LINE			0
+#define LCD_2_LINES			1
+#define LCD_5_8_DOTS		0
+#define LCD_5_10_DOTS		1
+
+
+// Enumeration of LCD COMMAND CATEGORIES
 typedef enum
 {
-	CLEAR_DISPLAY = 	0x1,
-	RETURN_HOME = 		0x2,
-	ENTRY_MODE_SET = 	0x4,
-	DISPLAY_ON_OFF = 	0x8,
-
+	CLEAR_DISPLAY,
+	RETURN_HOME,
+	ENTRY_MODE_SET,
+	DISPLAY_ON_OFF_CTRL,
+	CURSOR_DISPLAY_SHIFT,
+	FUNCTION_SET,
+	SET_CGRAM_ADDR,
+	SET_DDRAM_ADDR,
+	READ_BF_DDRAM_ADDR,
+	WRITE_TO_RAM,
+	READ_FROM_RAM
 } LCD_1602A_Commands_t;
 
 // INSTRUCTION CODE BIT POSITIONS
@@ -61,24 +72,7 @@ typedef enum
 
 #define INIT_FUNCTION_SET	0x3
 
-
-typedef enum
-{
-	LCD_CLR_DISP			= 0x01,
-	LCD_RETURN_HOME			= 0x02,
-	LCD_ENTRY_MODE			= 0x04,
-	LCD_ALL_OFF				= 0x08,
-	LCD_CUR_POS_ON			= 0x09,
-	LCD_CUR_ON 				= 0x0A,
-	LCD_CUR_CUR_POS_ON 		= 0x0B,
-	LCD_DISP_ON				= 0x0C,
-	LCD_DISP_CUR_POS_ON		= 0x0D,
-	LCD_DISP_CUR_ON			= 0x0E,
-	LCD_ALL_ON				= 0x0F
-} LCD_1602A_Instruction_Cmd_t;
-
-
-
+void LCD_Display_Str(char *str);
 void LCD_Initialize();
 void LCD_Power_Switch(uint8_t on_or_off);
 void LCD_Backlight_Power_Switch(uint8_t on_or_off);

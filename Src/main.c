@@ -32,11 +32,12 @@ int main(void)
 {
 	LCD_Initialize();
 
-	LCD_Display_Char(0, 0, 'H');
-	LCD_Display_Char(0, 0, 'e');
-	LCD_Display_Char(0, 0, 'l');
-	LCD_Display_Char(0, 0, 'l');
-	LCD_Display_Char(0, 0, 'o');
+	char *my_str = "Hello, world!\0";
+
+	LCD_Display_Char(0, 0, 'E');
+	LCD_Display_Str(my_str);
+
+	LCD_Power_Switch(OFF);
 
 	for(;;);
 }

@@ -270,7 +270,7 @@ static uint8_t construct_return_home_cmd()
 static uint8_t construct_entry_mode_set_cmd(uint8_t inc_dec, uint8_t shift)
 {
 	uint8_t cmd_byte = 0x04;
-	cmd_byte |= (inc_dec << 1) + (inc_dec << 0);
+	cmd_byte |= (inc_dec << 1) + (shift << 0);
 	return cmd_byte;
 }
 

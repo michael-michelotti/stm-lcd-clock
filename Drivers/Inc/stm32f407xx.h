@@ -29,6 +29,20 @@
 
 #define HSI_CLK_SPEED	16000000u
 
+// Given a mask for any field in a register, and a value for that field, set the value
+#define SET_FIELD(ADDR, MASK, VALUE) do { 																			\
+	uint32_t value = (VALUE);																						\
+	uint32_t curr_reg = *(ADDR);				/* Get current register value */									\
+	value *= ((MASK) & ~((MASK) << 1));			/* Shift field value by multiplying by first bit of mask */			\
+	*(ADDR) = ((curr_reg & ~(MASK)) | value); } /* Set register to old register, cleared by mask, set by value */	\
+	while (0)
+
+// Given a mask for any field in a register, clear that field
+#define CLEAR_FIELD(ADDR, MASK) *(ADDR) &= ~(MASK)
+// Given an address and an offset, set the bit at that offset
+#define SET_BIT(ADDR, BIT) *(ADDR) |= (1 << (BIT))
+// Given an address and an offset, clear the bit at that offset
+#define CLEAR_BIT(ADDR, BIT) *(ADDR) &= ~(1 << (BIT))
 
 /*************** MEMORY ADDRESSES *****************/
 // Major memory segment addresses

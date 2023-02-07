@@ -69,7 +69,7 @@ void I2C_Init(I2C_Handle_t *p_i2c_handle)
 
 void I2C_Peripheral_Power_Switch(I2C_Register_Map_t *p_i2c_x, uint8_t on_or_off)
 {
-	p_i2c_x->CR1 |= (1 << I2C_CR1_PE);
+	SET_BIT(&p_i2c_x->CR1, I2C_CR1_PE_MASK);
 }
 
 void I2C_Master_Send(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr)
@@ -162,12 +162,12 @@ void I2C_Master_Receive(I2C_Handle_t *p_i2c_handle, uint8_t *p_rx_buffer, uint32
 
 void I2C_Generate_Start_Condition(I2C_Handle_t *p_i2c_handle)
 {
-	p_i2c_handle->p_i2c_x->CR1 |= (1 << I2C_CR1_START);
+	SET_BIT(&p_i2c_handle->p_i2c_x->CR1, I2C_CR1_START_MASK);
 }
 
 void I2C_Generate_Stop_Condition(I2C_Handle_t *p_i2c_handle)
 {
-	p_i2c_handle->p_i2c_x->CR1 |= (1 << I2C_CR1_STOP);
+	SET_BIT(&p_i2c_handle->p_i2c_x->CR1, I2C_CR1_STOP_MASK);
 }
 
 /*
@@ -189,26 +189,18 @@ static void I2C_Write_Address_Byte(I2C_Handle_t *p_i2c_handle, uint8_t slave_add
 	slave_addr <<= 1;
 	// 0 for write, 1 for read
 	if (!read_or_write)
-	{
 		slave_addr &= ~1;
-	}
 	else
-	{
 		slave_addr |= 1;
-	}
 	p_i2c_handle->p_i2c_x->DR = slave_addr;
 }
 
 static void I2C_Ack_Control(I2C_Register_Map_t *p_i2c_x, uint8_t enable)
 {
 	if (enable == ENABLE)
-	{
-		p_i2c_x->CR1 |= (1 << I2C_CR1_ACK);
-	}
+		SET_BIT(&p_i2c_x->CR1, I2C_CR1_ACK_MASK);
 	else
-	{
-		p_i2c_x->CR1 &= ~(1 << I2C_CR1_ACK);
-	}
+		CLEAR_BIT(&p_i2c_x->CR1, I2C_CR1_ACK_MASK);
 }
 
 static void I2C_Configure_Clock_Registers(I2C_Handle_t *p_i2c_handle)

@@ -34,38 +34,29 @@
 
 #define DS3231_SLAVE_ADDR			0b1101000
 
+// Bit positions in various registers
 #define DS3231_AM_PM_BIT			5
 #define DS3231_12_24_BIT			6
 #define DS3231_CENTURY_BIT			7
 
+// How many registers date and time span in RTC
 #define FULL_DATE_LEN				4
 #define FULL_TIME_LEN				3
 #define FULL_DATETIME_LEN			( (FULL_DATE_LEN) + (FULL_TIME_LEN) )
 
-typedef struct
-{
-	uint8_t seconds;
-	uint8_t minutes;
-	uint8_t hours;
-	uint8_t date;
-	uint8_t month_century;
-	uint8_t year;
-	uint8_t alarm_1_secs;
-	uint8_t alarm_1_mins;
-	uint8_t alarm_1_hrs;
-	uint8_t alarm_1_day;
-	uint8_t alarm_1_date;
-	uint8_t alarm_2_secs;
-	uint8_t alarm_2_mins;
-	uint8_t alarm_2_hrs;
-	uint8_t alarm_2_day;
-	uint8_t alarm_2_date;
-	uint8_t control;
-	uint8_t control_status;
-	uint8_t aging_offset;
-	uint8_t msb_temp;
-	uint8_t lsb_temp;
-} DS3231_Register_Map_t;
+// Minimum and maximum values for various fields, for validation purposes
+#define DS3231_MINIMUM_SECONDS				0
+#define DS3231_MAXIMUM_SECONDS				59
+#define DS3231_MINIMUM_MINUTES				0
+#define DS3231_MAXIMUM_MINUTES				59
+#define DS3231_MINIMUM_HOURS				0
+#define DS3231_MAXIMUM_HOURS				23
+#define DS3231_MINIMUM_DATE					1
+#define DS3231_MAXIMUM_DATE					31
+#define DS3231_MINIMUM_MONTH				1
+#define DS3231_MAXIMUM_MONTH				12
+#define DS3231_MINIMUM_YEAR					0
+#define DS3231_MAXIMUM_YEAR					99
 
 typedef enum
 {
@@ -80,22 +71,15 @@ typedef enum
 	DS3231_NO_AM_PM
 } DS3231_AM_PM_t;
 
-typedef struct
-{
-	DS3231_12_24_Hour_t 	hour_12_24;
-	DS3231_AM_PM_t			am_pm;
-	uint8_t					hour;
-} DS3231_Hours_t;
-
 typedef enum
 {
-	SUN = 1,
-	MON,
-	TUE,
-	WED,
-	THU,
-	FRI,
-	SAT
+	DS3231_SUN = 1,
+	DS3231_MON,
+	DS3231_TUE,
+	DS3231_WED,
+	DS3231_THU,
+	DS3231_FRI,
+	DS3231_SAT
 } DS3231_Day_t;
 
 typedef struct
@@ -103,6 +87,20 @@ typedef struct
 	uint8_t month;
 	uint8_t century;
 } DS3231_Month_Century_t;
+
+typedef struct
+{
+	DS3231_12_24_Hour_t 	hour_12_24;
+	DS3231_AM_PM_t			am_pm;
+	uint8_t					hour;
+} DS3231_Hours_t;
+
+typedef struct
+{
+	uint8_t seconds;
+	uint8_t minutes;
+	DS3231_Hours_t hours;
+} DS3231_Time_t;
 
 typedef struct
 {
@@ -114,17 +112,11 @@ typedef struct
 
 typedef struct
 {
-	uint8_t seconds;
-	uint8_t minutes;
-	DS3231_Hours_t hours;
-} DS3231_Time_t;
-
-typedef struct
-{
 	DS3231_Time_t time;
 	DS3231_Full_Date_t date;
 } DS3231_Datetime_t;
 
+// Functions which retrieve data from the DS3231 clock module
 uint8_t DS3231_Get_Seconds(I2C_Handle_t *p_i2c_handle);
 uint8_t DS3231_Get_Minutes(I2C_Handle_t *p_i2c_handle);
 DS3231_Hours_t DS3231_Get_Hours(I2C_Handle_t *p_i2c_handle);
@@ -139,6 +131,7 @@ DS3231_Time_t DS3231_Get_Full_Time(I2C_Handle_t *p_i2c_handle);
 DS3231_Datetime_t DS3231_Get_Full_Datetime(I2C_Handle_t *p_i2c_handle);
 float DS3231_Get_Temp(I2C_Handle_t *p_i2c_handle);
 
+// Functions which set data in the DS3231 clock module
 void DS3231_Convert_Hour_Format(I2C_Handle_t *p_i2c_handle, DS3231_12_24_Hour_t hour_mode);
 void DS3231_Set_Seconds(I2C_Handle_t *p_i2c_handle, uint8_t seconds);
 void DS3231_Set_Minutes(I2C_Handle_t *p_i2c_handle, uint8_t minutes);

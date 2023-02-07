@@ -41,6 +41,12 @@
 #define LCD_5_8_DOTS		0
 #define LCD_5_10_DOTS		1
 
+// Default row and column position for date and time
+#define DEFAULT_DATE_COL	1
+#define DEFAULT_DATE_ROW	1
+#define DEFAULT_TIME_COL	0
+#define DEFAULT_TIME_ROW	0
+
 
 // Enumeration of LCD COMMAND CATEGORIES
 typedef enum
@@ -70,16 +76,16 @@ typedef enum
 #define IC_RW			8
 #define IC_RS			9
 
-#define INIT_FUNCTION_SET	0x3
-
-void LCD_Display_Str(char *str);
 void LCD_Initialize();
-void LCD_Power_Switch(uint8_t on_or_off);
 void LCD_Set_Cursor(uint8_t row, uint8_t column);
-void LCD_Backlight_Power_Switch(uint8_t on_or_off);
-void LCD_Display_Char(uint8_t row, uint8_t col, char ch);
-void LCD_Update_Time(DS3231_Time_t time, uint8_t row, uint8_t col);
-void LCD_Update_Date(DS3231_Full_Date_t date, uint8_t row, uint8_t col);
-void LCD_Update_Date_And_Time(DS3231_Datetime_t datetime, uint8_t row, uint8_t col);
+void LCD_Display_Char(char ch);
+void LCD_Display_Str(char *str);
+void LCD_Power_Switch(uint8_t on_or_off);
+// void LCD_Backlight_Power_Switch(uint8_t on_or_off);
+void LCD_Update_Time_Format(char *fmt);
+void LCD_Update_Date_Format(char *fmt);
+void LCD_Update_Time(DS3231_Time_t time);
+void LCD_Update_Date(DS3231_Full_Date_t date);
+void LCD_Update_Date_And_Time(DS3231_Datetime_t datetime);
 
 #endif /* INC_LCD1602A_DRIVER_H_ */

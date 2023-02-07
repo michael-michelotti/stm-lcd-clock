@@ -21,14 +21,6 @@ static void set_cgram_addr(uint8_t cgram_addr);
 static void set_ddram_addr(uint8_t ddram_addr);
 // static uint8_t construct_command(LCD_1602A_Commands_t cmd);
 
-static uint8_t construct_clear_display_cmd();
-static uint8_t construct_return_home_cmd();
-static uint8_t construct_entry_mode_set_cmd(uint8_t inc_dec, uint8_t shift);
-static uint8_t construct_display_on_off_ctrl_cmd(uint8_t disp, uint8_t cursor, uint8_t blink);
-static uint8_t construct_cursor_display_shift_cmd(uint8_t shift_or_cursor, uint8_t right_left);
-static uint8_t construct_function_set_cmd(uint8_t bit_len, uint8_t num_lines, uint8_t font);
-static uint8_t constrcut_set_cgram_addr_cmd(uint8_t cgram_addr);
-static uint8_t constrcut_set_ddram_addr_cmd(uint8_t ddram_addr);
 static void pulse_enable(uint32_t us_hold_time);
 static void mdelay(uint32_t cnt);
 static void udelay(uint32_t cnt);
@@ -104,10 +96,9 @@ void LCD_Initialize()
 	// 0x28 = 0010 1000, sets line number to 2 and style to 5x8 dot characters
 	function_set(LCD_4_BIT, LCD_2_LINES, LCD_5_8_DOTS);
 	// display_on_off(LCD_DISP_OFF, LCD_CURSOR_OFF, LCD_BLINK_OFF);
-	display_on_off(LCD_DISP_ON, LCD_CURSOR_ON, LCD_BLINK_OFF);
+	display_on_off(LCD_DISP_ON, LCD_CURSOR_ON, LCD_BLINK_ON);
 	clear_display();
 	entry_mode_set(LCD_INCREMENT, LCD_NO_SHIFT);
-
 }
 
 void LCD_Set_Cursor(uint8_t row, uint8_t column)
@@ -129,12 +120,12 @@ void LCD_Display_Str(char *str)
 	char curr;
 	while ((curr = *str) != '\0')
 	{
-		LCD_Display_Char(0, 0, curr);
+		LCD_Display_Char(curr);
 		str++;
 	}
 }
 
-void LCD_Display_Char(uint8_t row, uint8_t col, char ch)
+void LCD_Display_Char(char ch)
 {
 	write_char(ch);
 }
@@ -185,144 +176,60 @@ static void send_nybble(uint8_t nybble)
 
 static void clear_display()
 {
-	// uint8_t cmd_byte = construct_command(CLEAR_DISPLAY);
-	uint8_t cmd_byte = construct_clear_display_cmd();
-	write_command(cmd_byte, 1);
-	// 2ms delay - clear display takes ~1.5ms
+	// the command to clear display is always 0x1
+	write_command(0x1, 1);
+	// 2ms delay - clear display takes ~1.5ms for LCD to internally process
 	mdelay(2);
 }
 
 static void return_home()
 {
-	// uint8_t cmd_byte = construct_command(RETURN_HOME);
-	uint8_t cmd_byte = construct_return_home_cmd();
-	write_command(cmd_byte, 1);
-	// 2ms delay - return home takes ~1.5ms
+	// the command to return home is always 0x2
+	write_command(0x2, 1);
+	// 2ms delay - clear display takes ~1.5ms for LCD to internally process
 	mdelay(2);
 }
 
 static void entry_mode_set(uint8_t inc_dec, uint8_t shift)
 {
-	uint8_t cmd_byte = construct_entry_mode_set_cmd(inc_dec, shift);
+	uint8_t cmd_byte = 0x04;
+	cmd_byte |= (inc_dec << 1) + (shift << 0);
 	write_command(cmd_byte, 1);
 }
 
 static void display_on_off(uint8_t disp, uint8_t cursor, uint8_t blink)
 {
-	uint8_t cmd_byte = construct_display_on_off_ctrl_cmd(disp, cursor, blink);
+	uint8_t cmd_byte = 0x08;
+	cmd_byte |= (disp << 2) + (cursor << 1) + (blink << 0);
 	write_command(cmd_byte, 1);
 }
 
 static void cursor_display_shift(uint8_t shift_or_cursor, uint8_t right_left)
 {
-	uint8_t cmd_byte = construct_cursor_display_shift_cmd(shift_or_cursor, right_left);
+	uint8_t cmd_byte = 0x10;
+	cmd_byte |= (shift_or_cursor << 3) + (right_left << 2);
 	write_command(cmd_byte, 1);
 }
 
 static void function_set(uint8_t bit_len, uint8_t num_lines, uint8_t font)
 {
-	uint8_t cmd_byte = construct_function_set_cmd(bit_len, num_lines, font);
+	uint8_t cmd_byte = 0x20;
+	cmd_byte |= (bit_len << 4) + (num_lines << 3) + (font << 2);
 	write_command(cmd_byte, 1);
 }
 
 static void set_cgram_addr(uint8_t cgram_addr)
 {
-	uint8_t cmd_byte = constrcut_set_cgram_addr_cmd(cgram_addr);
+	uint8_t cmd_byte = 0x40;
+	cmd_byte |= (cgram_addr & 0x3F);
 	write_command(cmd_byte, 1);
 }
 
 static void set_ddram_addr(uint8_t ddram_addr)
 {
-	uint8_t cmd_byte = constrcut_set_ddram_addr_cmd(ddram_addr);
-	write_command(cmd_byte, 1);
-}
-/*
-static uint8_t construct_command(LCD_1602A_Commands_t cmd)
-{
-	switch (cmd)
-	{
-	case CLEAR_DISPLAY:
-		return construct_clear_display_cmd();
-		break;
-	case RETURN_HOME:
-		return construct_return_home_cmd();
-		break;
-	case ENTRY_MODE_SET:
-		return construct_entry_mode_set_cmd();
-		break;
-	case DISPLAY_ON_OFF_CTRL:
-		return construct_display_on_off_ctrl_cmd();
-		break;
-	case CURSOR_DISPLAY_SHIFT:
-		return construct_cursor_display_shift_cmd();
-		break;
-	case FUNCTION_SET:
-		return construct_function_set_cmd();
-		break;
-	case SET_CGRAM_ADDR:
-		return constrcut_set_cgram_addr_cmd();
-		break;
-	case SET_DDRAM_ADDR:
-		return constrcut_set_ddram_addr_cmd();
-		break;
-	}
-}
-*/
-
-static uint8_t construct_clear_display_cmd()
-{
-	// clear display command is always 0x1
-	return 0x1;
-}
-
-static uint8_t construct_return_home_cmd()
-{
-	// return home command is always 0x2
-	return 0x2;
-}
-
-static uint8_t construct_entry_mode_set_cmd(uint8_t inc_dec, uint8_t shift)
-{
-	uint8_t cmd_byte = 0x04;
-	cmd_byte |= (inc_dec << 1) + (shift << 0);
-	return cmd_byte;
-}
-
-static uint8_t construct_display_on_off_ctrl_cmd(uint8_t disp, uint8_t cursor, uint8_t blink)
-{
-	uint8_t cmd_byte = 0x08;
-	cmd_byte |= (disp << 2) + (cursor << 1) + (blink << 0);
-	return cmd_byte;
-}
-
-static uint8_t construct_cursor_display_shift_cmd(uint8_t shift_or_cursor, uint8_t right_left)
-{
-	uint8_t cmd_byte = 0x10;
-	cmd_byte |= (shift_or_cursor << 3) + (right_left << 2);
-	return cmd_byte;
-}
-
-static uint8_t construct_function_set_cmd(uint8_t bit_len, uint8_t num_lines, uint8_t font)
-{
-	uint8_t cmd_byte = 0x20;
-	cmd_byte |= (bit_len << 4) + (num_lines << 3) + (font << 2);
-	return cmd_byte;
-}
-
-static uint8_t constrcut_set_cgram_addr_cmd(uint8_t cgram_addr)
-{
-	uint8_t cmd_byte = 0x40;
-	cgram_addr &= 0x3F;
-	cmd_byte |= cgram_addr;
-	return cmd_byte;
-}
-
-static uint8_t constrcut_set_ddram_addr_cmd(uint8_t ddram_addr)
-{
 	uint8_t cmd_byte = 0x80;
-	ddram_addr &= 0x7F;
-	cmd_byte |= ddram_addr;
-	return cmd_byte;
+	cmd_byte |= (ddram_addr & 0x7F);
+	write_command(cmd_byte, 1);
 }
 
 static void pulse_enable(uint32_t us_hold_time)

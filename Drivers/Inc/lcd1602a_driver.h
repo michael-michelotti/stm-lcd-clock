@@ -43,13 +43,15 @@
 
 // Default row and column position for date and time
 #define DEFAULT_DATE_COL	1
-#define DEFAULT_DATE_ROW	1
-#define DEFAULT_TIME_COL	0
-#define DEFAULT_TIME_ROW	0
+#define DEFAULT_DATE_ROW	2
+#define DEFAULT_TIME_COL	1
+#define DEFAULT_TIME_ROW	1
 
 #define ENALBE_PULSE_US		500		// how long to hold enable high when sending nybble
 #define LCD_TAS_US			1		// how long to wait after toggling RS or RW pins for address setup
 #define LCD_HOLD_TIME_US	500		// how long to hold data lines valid after enable high to low transition
+
+#define ASCII_DIGIT_OFFSET	48
 
 
 // Enumeration of LCD COMMAND CATEGORIES

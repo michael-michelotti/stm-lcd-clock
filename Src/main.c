@@ -32,12 +32,13 @@ int main(void)
 {
 	LCD_Initialize();
 
+	DS3231_Hours_t hrs = { DS3231_12_HOUR, DS3231_PM, 6 };
+	DS3231_Time_t time = { 45, 20, hrs };
 	char *my_str = "Hello, world!\0";
 
-	LCD_Set_Cursor(3, 2);
-	LCD_Display_Str(my_str);
+	LCD_Update_Time(time);
 
-	LCD_Power_Switch(OFF);
+	// LCD_Power_Switch(OFF);
 
 	for(;;);
 }

@@ -139,7 +139,7 @@ static void write_char(char ch)
 
 	// set RS high (for data not command)
 	GPIO_Write_To_Output_Pin(LCD_GPIO_PORT, RS_GPIO_PIN, HIGH);
-	udelay(100);
+	udelay(LCD_TAS_US);
 
 	send_nybble(high_nybble);
 	send_nybble(low_nybble);
@@ -168,16 +168,16 @@ static void send_nybble(uint8_t nybble)
 	GPIO_Write_To_Output_Pin(LCD_GPIO_PORT, DB7_GPIO_PIN, ((nybble >> 3) & 1));
 
 	// send nybble to LCD by pulsing enable, then delay 1us for enable pulse width (450ns min)
-	pulse_enable(500);
+	pulse_enable(ENALBE_PULSE_US);
 	// wait 1us for total cycle
 	// (data must be held valid for 10ns, enable cannot pulse high again for 500ns)
-	udelay(500);
+	udelay(LCD_HOLD_TIME_US);
 }
 
 static void clear_display()
 {
 	// the command to clear display is always 0x1
-	write_command(0x1, 1);
+	write_command(CLEAR_DISPLAY, LCD_TAS_US);
 	// 2ms delay - clear display takes ~1.5ms for LCD to internally process
 	mdelay(2);
 }
@@ -185,7 +185,7 @@ static void clear_display()
 static void return_home()
 {
 	// the command to return home is always 0x2
-	write_command(0x2, 1);
+	write_command(RETURN_HOME, LCD_TAS_US);
 	// 2ms delay - clear display takes ~1.5ms for LCD to internally process
 	mdelay(2);
 }
@@ -194,42 +194,42 @@ static void entry_mode_set(uint8_t inc_dec, uint8_t shift)
 {
 	uint8_t cmd_byte = 0x04;
 	cmd_byte |= (inc_dec << 1) + (shift << 0);
-	write_command(cmd_byte, 1);
+	write_command(cmd_byte, LCD_TAS_US);
 }
 
 static void display_on_off(uint8_t disp, uint8_t cursor, uint8_t blink)
 {
 	uint8_t cmd_byte = 0x08;
 	cmd_byte |= (disp << 2) + (cursor << 1) + (blink << 0);
-	write_command(cmd_byte, 1);
+	write_command(cmd_byte, LCD_TAS_US);
 }
 
 static void cursor_display_shift(uint8_t shift_or_cursor, uint8_t right_left)
 {
 	uint8_t cmd_byte = 0x10;
 	cmd_byte |= (shift_or_cursor << 3) + (right_left << 2);
-	write_command(cmd_byte, 1);
+	write_command(cmd_byte, LCD_TAS_US);
 }
 
 static void function_set(uint8_t bit_len, uint8_t num_lines, uint8_t font)
 {
 	uint8_t cmd_byte = 0x20;
 	cmd_byte |= (bit_len << 4) + (num_lines << 3) + (font << 2);
-	write_command(cmd_byte, 1);
+	write_command(cmd_byte, LCD_TAS_US);
 }
 
 static void set_cgram_addr(uint8_t cgram_addr)
 {
 	uint8_t cmd_byte = 0x40;
 	cmd_byte |= (cgram_addr & 0x3F);
-	write_command(cmd_byte, 1);
+	write_command(cmd_byte, LCD_TAS_US);
 }
 
 static void set_ddram_addr(uint8_t ddram_addr)
 {
 	uint8_t cmd_byte = 0x80;
 	cmd_byte |= (ddram_addr & 0x7F);
-	write_command(cmd_byte, 1);
+	write_command(cmd_byte, LCD_TAS_US);
 }
 
 static void pulse_enable(uint32_t us_hold_time)

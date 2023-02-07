@@ -47,12 +47,16 @@
 #define DEFAULT_TIME_COL	0
 #define DEFAULT_TIME_ROW	0
 
+#define ENALBE_PULSE_US		500		// how long to hold enable high when sending nybble
+#define LCD_TAS_US			1		// how long to wait after toggling RS or RW pins for address setup
+#define LCD_HOLD_TIME_US	500		// how long to hold data lines valid after enable high to low transition
+
 
 // Enumeration of LCD COMMAND CATEGORIES
 typedef enum
 {
-	CLEAR_DISPLAY,
-	RETURN_HOME,
+	CLEAR_DISPLAY = 0x1,
+	RETURN_HOME = 0x2,
 	ENTRY_MODE_SET,
 	DISPLAY_ON_OFF_CTRL,
 	CURSOR_DISPLAY_SHIFT,

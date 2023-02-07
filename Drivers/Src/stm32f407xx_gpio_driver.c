@@ -151,7 +151,7 @@ void GPIO_Write_To_Output_Pin(GPIO_Register_Map_t *p_gpio_x, uint8_t pin_num, ui
 	}
 	else
 	{
-		CLEAR_BIT(&p_gpio_x->ODR, pin_num); // just clear the bit
+		CLEAR_BIT(&p_gpio_x->ODR, (0x1 << pin_num)); // just clear the bit
 	}
 }
 

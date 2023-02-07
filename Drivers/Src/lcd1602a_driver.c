@@ -25,6 +25,7 @@ static void pulse_enable(uint32_t us_hold_time);
 static void mdelay(uint32_t cnt);
 static void udelay(uint32_t cnt);
 static char *convert_time_to_str(DS3231_Time_t time);
+static char *convert_date_to_str(DS3231_Full_Date_t date);
 
 void LCD_Power_Switch(uint8_t on_or_off)
 {
@@ -94,13 +95,13 @@ void LCD_Initialize()
 void LCD_Set_Cursor(uint8_t row, uint8_t column)
 {
 	uint8_t ddram_addr = 0;
-	if (column == 2)
+	if (row == 2)
 	{
 		// most significant bit needs to be set for 2nd column
 		ddram_addr |= (1 << 6);
 	}
 	// row number is 4 bits, 0 through F for 1 to 16
-	ddram_addr |= ((row-1) & 0xF);
+	ddram_addr |= ((column-1) & 0xF);
 
 	set_ddram_addr(ddram_addr);
 }
@@ -129,8 +130,72 @@ void LCD_Update_Time(DS3231_Time_t time)
 	LCD_Display_Str(my_time_str);
 }
 
+void LCD_Update_Date(DS3231_Full_Date_t date)
+{
+	// set cursor to time position
+	LCD_Set_Cursor(DEFAULT_DATE_ROW, DEFAULT_DATE_COL);
+
+	char *my_date_str = convert_date_to_str(date);
+	LCD_Display_Str(my_date_str);
+}
+
+void LCD_Update_Date_And_Time(DS3231_Datetime_t datetime)
+{
+	LCD_Update_Time(datetime.time);
+	LCD_Update_Date(datetime.date);
+}
 
 // PRIVATE UTILITY FUNCTIONS
+static char *convert_date_to_str(DS3231_Full_Date_t date)
+{
+	// format MM/DD/YY
+	char *DATE_STR = (char *)malloc(9);
+	DATE_STR[8] = '\0';
+
+	if (date.month < 10)
+	{
+		DATE_STR[0] = '0';
+		DATE_STR[1] = date.month + ASCII_DIGIT_OFFSET;
+	}
+	else
+	{
+		uint8_t month_tens_place = date.month / 10;
+		DATE_STR[0] = month_tens_place + ASCII_DIGIT_OFFSET;
+		uint8_t month_ones_place = date.month % 10;
+		DATE_STR[1] = month_ones_place + ASCII_DIGIT_OFFSET;
+	}
+	DATE_STR[2] = '/';
+
+	if (date.date < 10)
+	{
+		DATE_STR[3] = '0';
+		DATE_STR[4] = date.date + ASCII_DIGIT_OFFSET;
+	}
+	else
+	{
+		uint8_t date_tens_place = date.date / 10;
+		DATE_STR[3] = date_tens_place + ASCII_DIGIT_OFFSET;
+		uint8_t date_ones_place = date.date % 10;
+		DATE_STR[4] = date_ones_place + ASCII_DIGIT_OFFSET;
+	}
+	DATE_STR[5] = '/';
+
+	if (date.year < 10)
+	{
+		DATE_STR[6] = '0';
+		DATE_STR[7] = date.year + ASCII_DIGIT_OFFSET;
+	}
+	else
+	{
+		uint8_t year_tens_place = date.year / 10;
+		DATE_STR[6] = year_tens_place + ASCII_DIGIT_OFFSET;
+		uint8_t year_ones_place = date.year % 10;
+		DATE_STR[7] = year_ones_place + ASCII_DIGIT_OFFSET;
+	}
+
+	return DATE_STR;
+}
+
 static char *convert_time_to_str(DS3231_Time_t time)
 {
 	// this is a memory leak right now - allocating memory for strings every time i call convert time

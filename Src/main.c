@@ -34,9 +34,11 @@ int main(void)
 
 	DS3231_Hours_t hrs = { DS3231_12_HOUR, DS3231_PM, 6 };
 	DS3231_Time_t time = { 45, 20, hrs };
-	char *my_str = "Hello, world!\0";
+	DS3231_Full_Date_t date = { MON, 6, 2, 23 };
 
-	LCD_Update_Time(time);
+	DS3231_Datetime_t datetime = { time, date };
+
+	LCD_Update_Date_And_Time(datetime);
 
 	// LCD_Power_Switch(OFF);
 

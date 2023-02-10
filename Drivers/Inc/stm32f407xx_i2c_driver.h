@@ -34,6 +34,13 @@ typedef struct
 
 /*************** RELEVANT BIT POSITIONS FOR I2C PERIPHERAL REGISTERS *****************/
 // I2C_CR1 bit positions - General control register
+#define I2C_CR1_PE						0		// Peripheral enable; basically on/off switch
+#define I2C_CR1_NO_STRETCH  			7		// Disable clock stretching (enabled by default)
+#define I2C_CR1_START 					8		// Generate start condition
+#define I2C_CR1_STOP  				 	9		// Generate stop condition
+#define I2C_CR1_ACK 				 	10		// Enables acknowledge bits; can only set when PE is 0
+#define I2C_CR1_SWRST  				 	15		// Software reset
+
 typedef enum
 {
 	I2C_CR1_PE_MASK							= 0x0001U,
@@ -43,13 +50,6 @@ typedef enum
 	I2C_CR1_ACK_MASK						= 0x0400U,
 	I2C_CR1_SWRST_MASK						= 0x8000U
 } I2C_CR1_Mask_t;
-
-#define I2C_CR1_PE						0		// Peripheral enable; basically on/off switch
-#define I2C_CR1_NO_STRETCH  			7		// Disable clock stretching (enabled by default)
-#define I2C_CR1_START 					8		// Generate start condition
-#define I2C_CR1_STOP  				 	9		// Generate stop condition
-#define I2C_CR1_ACK 				 	10		// Enables acknowledge bits; can only set when PE is 0
-#define I2C_CR1_SWRST  				 	15		// Software reset
 
 // I2C_CR2 bit positions - General control register
 typedef enum

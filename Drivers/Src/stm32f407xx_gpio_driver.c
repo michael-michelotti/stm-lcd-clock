@@ -47,17 +47,20 @@ void GPIO_Init(GPIO_Handle_t *p_gpio_handle)
 
 		GPIO_EXTI_Config(p_gpio_handle);
 		// unmask interrupts for desired input line
-		EXTI->IMR |= (1 << p_gpio_handle->gpio_pin_config.gpio_pin_num);
+		SET_BIT(&EXTI->IMR, (1 << p_gpio_handle->gpio_pin_config.gpio_pin_num));
 	}
 
+	uint32_t gpio_register_mask = 0b11 << (2 * p_gpio_handle->gpio_pin_config.gpio_pin_num);
+
 	// 2. Configure speed
-	p_gpio_handle->p_gpio_x->OSPEEDR |= (p_gpio_handle->gpio_pin_config.gpio_pin_speed << (2 * p_gpio_handle->gpio_pin_config.gpio_pin_num));
+	SET_FIELD(&p_gpio_handle->p_gpio_x->OSPEEDR, gpio_register_mask, p_gpio_handle->gpio_pin_config.gpio_pin_speed);
 
 	// 3. Configure PU PD settings
-	p_gpio_handle->p_gpio_x->PUPDR |= (p_gpio_handle->gpio_pin_config.gpio_pin_pu_pd_ctrl << (2 * p_gpio_handle->gpio_pin_config.gpio_pin_num));
+	SET_FIELD(&p_gpio_handle->p_gpio_x->PUPDR, gpio_register_mask, p_gpio_handle->gpio_pin_config.gpio_pin_pu_pd_ctrl);
 
+	gpio_register_mask = 0b1 << (p_gpio_handle->gpio_pin_config.gpio_pin_num);
 	// 4. Configure output type
-	p_gpio_handle->p_gpio_x->OTYPER |= (p_gpio_handle->gpio_pin_config.gpio_pin_op_type << p_gpio_handle->gpio_pin_config.gpio_pin_num);
+	SET_FIELD(&p_gpio_handle->p_gpio_x->OTYPER, gpio_register_mask, p_gpio_handle->gpio_pin_config.gpio_pin_op_type);
 
 	// 5. Configure alternate functionality
 	if (p_gpio_handle->gpio_pin_config.gpio_pin_mode == GPIO_MODE_ALT)
@@ -66,75 +69,87 @@ void GPIO_Init(GPIO_Handle_t *p_gpio_handle)
 
 void GPIO_Cleanup(GPIO_Register_Map_t *p_gpio_x)
 {
-	if (p_gpio_x == GPIOA)
+	switch ((uint32_t)p_gpio_x)
+	{
+	case GPIOA_BASE_ADDR:
 		GPIOA_RESET();
-	else if (p_gpio_x == GPIOB)
+		break;
+	case GPIOB_BASE_ADDR:
 		GPIOB_RESET();
-	else if (p_gpio_x == GPIOC)
+	case GPIOC_BASE_ADDR:
 		GPIOC_RESET();
-	else if (p_gpio_x == GPIOD)
+	case GPIOD_BASE_ADDR:
 		GPIOD_RESET();
-	else if (p_gpio_x == GPIOE)
+	case GPIOE_BASE_ADDR:
 		GPIOE_RESET();
-	else if (p_gpio_x == GPIOF)
+	case GPIOF_BASE_ADDR:
 		GPIOF_RESET();
-	else if (p_gpio_x == GPIOG)
+	case GPIOG_BASE_ADDR:
 		GPIOG_RESET();
-	else if (p_gpio_x == GPIOH)
+	case GPIOH_BASE_ADDR:
 		GPIOH_RESET();
-	else if (p_gpio_x == GPIOI)
+	case GPIOI_BASE_ADDR:
 		GPIOI_RESET();
+	}
 }
 
 void GPIO_Peri_Clk_Ctrl(GPIO_Register_Map_t *p_gpio_x, uint8_t enable)
 {
 	if (enable == ENABLE)
 	{
-		if (p_gpio_x == GPIOA)
+		switch ((uint32_t)p_gpio_x)
+		{
+		case GPIOA_BASE_ADDR:
 			GPIOA_PCLK_EN();
-		else if (p_gpio_x == GPIOB)
+			break;
+		case GPIOB_BASE_ADDR:
 			GPIOB_PCLK_EN();
-		else if (p_gpio_x == GPIOC)
+		case GPIOC_BASE_ADDR:
 			GPIOC_PCLK_EN();
-		else if (p_gpio_x == GPIOD)
+		case GPIOD_BASE_ADDR:
 			GPIOD_PCLK_EN();
-		else if (p_gpio_x == GPIOE)
+		case GPIOE_BASE_ADDR:
 			GPIOE_PCLK_EN();
-		else if (p_gpio_x == GPIOF)
+		case GPIOF_BASE_ADDR:
 			GPIOF_PCLK_EN();
-		else if (p_gpio_x == GPIOG)
+		case GPIOG_BASE_ADDR:
 			GPIOG_PCLK_EN();
-		else if (p_gpio_x == GPIOH)
+		case GPIOH_BASE_ADDR:
 			GPIOH_PCLK_EN();
-		else if (p_gpio_x == GPIOI)
+		case GPIOI_BASE_ADDR:
 			GPIOI_PCLK_EN();
+		}
 	}
 	else
 	{
-		if (p_gpio_x == GPIOA)
+		switch ((uint32_t)p_gpio_x)
+		{
+		case GPIOA_BASE_ADDR:
 			GPIOA_PCLK_DI();
-		else if (p_gpio_x == GPIOB)
+			break;
+		case GPIOB_BASE_ADDR:
 			GPIOB_PCLK_DI();
-		else if (p_gpio_x == GPIOC)
+		case GPIOC_BASE_ADDR:
 			GPIOC_PCLK_DI();
-		else if (p_gpio_x == GPIOD)
+		case GPIOD_BASE_ADDR:
 			GPIOD_PCLK_DI();
-		else if (p_gpio_x == GPIOE)
+		case GPIOE_BASE_ADDR:
 			GPIOE_PCLK_DI();
-		else if (p_gpio_x == GPIOF)
+		case GPIOF_BASE_ADDR:
 			GPIOF_PCLK_DI();
-		else if (p_gpio_x == GPIOG)
+		case GPIOG_BASE_ADDR:
 			GPIOG_PCLK_DI();
-		else if (p_gpio_x == GPIOH)
+		case GPIOH_BASE_ADDR:
 			GPIOH_PCLK_DI();
-		else if (p_gpio_x == GPIOI)
+		case GPIOI_BASE_ADDR:
 			GPIOI_PCLK_DI();
+		}
 	}
 }
 
-uint8_t GPIO_Read_From_Input_Pin(volatile GPIO_Register_Map_t *p_gpio_x, uint8_t pin_num)
+uint8_t GPIO_Read_From_Input_Pin(GPIO_Register_Map_t *p_gpio_x, uint8_t pin_num)
 {
-	return (uint8_t) ((p_gpio_x->IDR >> pin_num) & 0x1);
+	return GET_BIT(&p_gpio_x->IDR, (pin_num << 0x1));
 }
 
 uint16_t GPIO_Read_From_Input_Port(GPIO_Register_Map_t *p_gpio_x)
@@ -207,10 +222,10 @@ void GPIO_IRQ_Priority_Config(uint8_t irq_num, uint32_t irq_prio)
 void GPIO_IRQ_Handler(uint8_t pin_num)
 {
 	// clear the exti pending register corresponding to pin number
-	if (EXTI->PR & (1 << pin_num))
+	if (GET_BIT(&EXTI->PR, (1 << pin_num)))
 	{
 		// clear the bit
-		EXTI->PR |= (1 << pin_num);
+		CLEAR_BIT(&EXTI->PR, (1 << pin_num));
 	}
 }
 
@@ -218,9 +233,8 @@ void GPIO_IRQ_Handler(uint8_t pin_num)
 static void GPIO_Configure_Mode(GPIO_Handle_t *p_gpio_handle)
 {
 	// clear mode bits for proper GPIO pin
-	p_gpio_handle->p_gpio_x->MODER &= ~( 0b11 << (2 * p_gpio_handle->gpio_pin_config.gpio_pin_num) );
-	// set mode bits properly
-	p_gpio_handle->p_gpio_x->MODER |= ( p_gpio_handle->gpio_pin_config.gpio_pin_mode << (2 * p_gpio_handle->gpio_pin_config.gpio_pin_num) );
+	uint32_t moder_mask = 0b11 << (2 * p_gpio_handle->gpio_pin_config.gpio_pin_num);
+	SET_FIELD(&p_gpio_handle->p_gpio_x->MODER, moder_mask, p_gpio_handle->gpio_pin_config.gpio_pin_mode);
 }
 
 static void GPIO_EXTI_Rising_Falling_Config(uint8_t gpio_pin_num, uint8_t enable, uint8_t rise_or_fall)
@@ -228,41 +242,44 @@ static void GPIO_EXTI_Rising_Falling_Config(uint8_t gpio_pin_num, uint8_t enable
 	if (rise_or_fall == RISING)
 	{
 		if (enable == ENABLE)
-			EXTI->RTSR |= (1 << gpio_pin_num);
+			SET_BIT(&EXTI->RTSR, (1 << gpio_pin_num));
 		else
-			EXTI->RTSR &= ~(1 << gpio_pin_num);
+			CLEAR_BIT(&EXTI->RTSR, (1 << gpio_pin_num));
 	}
 	else if (rise_or_fall == FALLING)
 	{
 		if (enable == ENABLE)
-			EXTI->FTSR |= (1 << gpio_pin_num);
+			SET_BIT(&EXTI->FTSR, (1 << gpio_pin_num));
 		else
-			EXTI->FTSR &= ~(1 << gpio_pin_num);
+			CLEAR_BIT(&EXTI->FTSR, (1 << gpio_pin_num));
 	}
 }
 
 static uint8_t GPIO_EXTI_Base_Addr_To_Code(GPIO_Register_Map_t *p_gpio_base_addr)
 {
-	if (p_gpio_base_addr == GPIOA)
+	switch ((uint32_t)p_gpio_base_addr)
+	{
+	case GPIOA_BASE_ADDR:
 		return 0b0000;
-	else if (p_gpio_base_addr == GPIOB)
+	case GPIOB_BASE_ADDR:
 		return 0b0001;
-	else if (p_gpio_base_addr == GPIOC)
+	case GPIOC_BASE_ADDR:
 		return 0b0010;
-	else if (p_gpio_base_addr == GPIOD)
+	case GPIOD_BASE_ADDR:
 		return 0b0011;
-	else if (p_gpio_base_addr == GPIOE)
+	case GPIOE_BASE_ADDR:
 		return 0b0100;
-	else if (p_gpio_base_addr == GPIOF)
+	case GPIOF_BASE_ADDR:
 		return 0b0101;
-	else if (p_gpio_base_addr == GPIOG)
+	case GPIOG_BASE_ADDR:
 		return 0b0110;
-	else if (p_gpio_base_addr == GPIOH)
+	case GPIOH_BASE_ADDR:
 		return 0b0111;
-	else if (p_gpio_base_addr == GPIOI)
+	case GPIOI_BASE_ADDR:
 		return 0b1000;
-	else
+	default:
 		return -1;
+	}
 }
 
 static void GPIO_EXTI_Config(GPIO_Handle_t *p_gpio_handle)
@@ -280,19 +297,19 @@ static void GPIO_Configure_Alternate_Function(GPIO_Handle_t *p_gpio_handle)
 {
 	uint8_t high_or_low = 0;
 	uint8_t shift_amount = 0;
+	uint32_t afr_field_mask;
 
 	// depending on whether the pin number is greater than or less than 8, i have to assign the alternate
 	// function using either the alternate function high or alternate function low registers
 	high_or_low = p_gpio_handle->gpio_pin_config.gpio_pin_num / 8;
 	shift_amount = p_gpio_handle->gpio_pin_config.gpio_pin_num % 8;
+	afr_field_mask = 0b1111 << (shift_amount * 4);
 	if (high_or_low == 0)
 	{
-		p_gpio_handle->p_gpio_x->AFRL &= ~(0b1111 << (shift_amount * 4));
-		p_gpio_handle->p_gpio_x->AFRL |= p_gpio_handle->gpio_pin_config.gpio_pin_alt_fun_mode << (shift_amount * 4);
+		SET_FIELD(&p_gpio_handle->p_gpio_x->AFRL, afr_field_mask, p_gpio_handle->gpio_pin_config.gpio_pin_alt_fun_mode);
 	}
 	else if (high_or_low == 1)
 	{
-		p_gpio_handle->p_gpio_x->AFRH &= ~(0b1111 << (shift_amount * 4));
-		p_gpio_handle->p_gpio_x->AFRH |= p_gpio_handle->gpio_pin_config.gpio_pin_alt_fun_mode << (shift_amount * 4);
+		SET_FIELD(&p_gpio_handle->p_gpio_x->AFRH, afr_field_mask, p_gpio_handle->gpio_pin_config.gpio_pin_alt_fun_mode);
 	}
 }

@@ -59,11 +59,13 @@ typedef enum
 	GPIO_PUPD_PD
 } GPIO_PUPD_Mode_t;
 
+
+
 /* READ FUNCTIONALITY */
 void GPIO_Init(GPIO_Handle_t *p_gpio_handle);
 void GPIO_Cleanup(GPIO_Register_Map_t *p_gpio_x);
 void GPIO_Peri_Clk_Ctrl(GPIO_Register_Map_t *p_gpio_x, uint8_t enable);
-uint8_t GPIO_Read_From_Input_Pin(volatile GPIO_Register_Map_t *p_gpio_x, uint8_t pin_num);
+uint8_t GPIO_Read_From_Input_Pin(GPIO_Register_Map_t *p_gpio_x, uint8_t pin_num);
 uint16_t GPIO_Read_From_Input_Port(GPIO_Register_Map_t *p_gpio_x);
 
 /* WRITE FUNCTIONALITY */

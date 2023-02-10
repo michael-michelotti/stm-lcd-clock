@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "stm32f407xx.h"
 #include "ds3231_rtc_driver.h"

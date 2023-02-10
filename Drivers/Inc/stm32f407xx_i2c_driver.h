@@ -145,7 +145,7 @@ typedef enum
 // I2C_TRISE - Clock rise time register
 typedef enum
 {
-	I2C_TRISE_TRISE_MASK				= 0x003FU,
+	I2C_TRISE_TRISE_MASK				= 0x001FU,
 } I2C_TRISE_Mask_t;
 
 #define I2C_TRISE_TRISE 				0		// Controls maximum clock rise time in master mode; 6 bits, 0 to 5

@@ -45,9 +45,9 @@ int main(void)
 	I2C_Handle_t i2c2_handle = { I2C2, i2c2_conf, 0, 0, 0, 0, 0, DS3231_SLAVE_ADDR, 0, 0 };
 	I2C_Init(&i2c2_handle);
 
-	DS3231_Hours_t hrs = { DS3231_12_HOUR, DS3231_PM, 6 };
-	DS3231_Time_t time = { 45, 20, hrs };
-	DS3231_Full_Date_t date = { DS3231_MON, 6, 2, 23 };
+	DS3231_Hours_t hrs = { DS3231_12_HOUR, DS3231_PM, 9 };
+	DS3231_Time_t time = { 0, 47, hrs };
+	DS3231_Full_Date_t date = { DS3231_THU, 9, 2, 23 };
 	DS3231_Datetime_t dt = { time, date };
 	// DS3231_Set_Full_Datetime(&i2c2_handle, dt);
 	DS3231_Datetime_t datetime = DS3231_Get_Full_Datetime(&i2c2_handle);

@@ -24,21 +24,33 @@ void I2C_Peri_Clk_Ctrl(I2C_Register_Map_t *p_i2c_x, uint8_t enable)
 {
 	if (enable == ENABLE)
 	{
-		if (p_i2c_x == I2C1)
+		switch ((uint32_t) p_i2c_x)
+		{
+		case I2C1_BASE_ADDR:
 			I2C1_PCLK_EN();
-		else if (p_i2c_x == I2C2)
+			break;
+		case I2C2_BASE_ADDR:
 			I2C2_PCLK_EN();
-		else if (p_i2c_x == I2C3)
+			break;
+		case I2C3_BASE_ADDR:
 			I2C3_PCLK_EN();
+			break;
+		}
 	}
 	if (enable == DISABLE)
 	{
-		if (p_i2c_x == I2C1)
+		switch ((uint32_t) p_i2c_x)
+		{
+		case I2C1_BASE_ADDR:
 			I2C1_PCLK_DI();
-		else if (p_i2c_x == I2C2)
+			break;
+		case I2C2_BASE_ADDR:
 			I2C2_PCLK_DI();
-		else if (p_i2c_x == I2C3)
+			break;
+		case I2C3_BASE_ADDR:
 			I2C3_PCLK_DI();
+			break;
+		}
 	}
 }
 
@@ -179,9 +191,9 @@ static uint8_t I2C_Check_Status_Flag(I2C_Handle_t *p_i2c_handle, uint8_t flag_nu
 {
 	// 0 = SR1, 1 = SR2
 	if (!sr_1_or_2)
-		return (p_i2c_handle->p_i2c_x->SR1 >> flag_num) & 1;
+		return GET_BIT(&p_i2c_handle->p_i2c_x->SR1, (1 << flag_num));
 	else
-		return (p_i2c_handle->p_i2c_x->SR2 >> flag_num) & 1;
+		return GET_BIT(&p_i2c_handle->p_i2c_x->SR2, (1 << flag_num));
 }
 
 static void I2C_Write_Address_Byte(I2C_Handle_t *p_i2c_handle, uint8_t slave_addr, uint8_t read_or_write)
@@ -213,13 +225,13 @@ static void I2C_Configure_Clock_Registers(I2C_Handle_t *p_i2c_handle)
 	if (p_i2c_handle->i2c_config.scl_speed <= I2C_SPEED_SM)
 	{
 		// cleared F/S bit means Standard Mode I2C
-		p_i2c_handle->p_i2c_x->CCR &= ~(1 << I2C_CCR_FS);
+		CLEAR_BIT(&p_i2c_handle->p_i2c_x->CCR, (1 << I2C_CCR_FS));
 		I2C_Set_CCR(p_i2c_handle, sys_clk_freq);
 	}
 	else
 	{
 		// Set F/S bit means Fast Mode
-		p_i2c_handle->p_i2c_x->CCR |= (1 << I2C_CCR_FS);
+		SET_BIT(&p_i2c_handle->p_i2c_x->CCR, (1 << I2C_CCR_FS));
 		I2C_Set_CCR(p_i2c_handle, sys_clk_freq);
 	}
 
@@ -236,8 +248,7 @@ static void I2C_Set_CR2_Freq(I2C_Register_Map_t *p_i2c_x, uint32_t sys_clk_freq)
 	if (sys_clk_freq > 31)
 		return;
 	// clear first 5 bits of CR2, then apply freq value
-	p_i2c_x->CR2 &= ~0x1F;
-	p_i2c_x->CR2 |= sys_clk_freq;
+	SET_FIELD(&p_i2c_x->CR2, I2C_CR2_FREQ_MASK, sys_clk_freq);
 }
 
 static void I2C_Set_CCR(I2C_Handle_t *p_i2c_handle, uint32_t sys_clk_freq)
@@ -254,8 +265,7 @@ static void I2C_Set_CCR(I2C_Handle_t *p_i2c_handle, uint32_t sys_clk_freq)
 		ccr = apb1_clk / (I2C_SPEED_FM * 3);
 
 	// clear bottom 12 bits, then set bottom 12 to calculated CCR
-	p_i2c_handle->p_i2c_x->CCR &= ~(0xFFF);
-	p_i2c_handle->p_i2c_x->CCR |= ccr;
+	SET_FIELD(&p_i2c_handle->p_i2c_x->CCR, I2C_CCR_CCR_MASK, ccr);
 }
 
 static void I2C_Configure_TRISE(I2C_Handle_t *p_i2c_handle, uint32_t sys_clk_freq)
@@ -275,8 +285,7 @@ static void I2C_Configure_TRISE(I2C_Handle_t *p_i2c_handle, uint32_t sys_clk_fre
 	}
 
 	// clear bottom 5 bits of I2C_TRISE register, then set to calculated value
-	p_i2c_handle->p_i2c_x->TRISE &= ~(0x1F);
-	p_i2c_handle->p_i2c_x->TRISE |= trise;
+	SET_FIELD(&p_i2c_handle->p_i2c_x->TRISE, I2C_TRISE_TRISE_MASK, trise);
 }
 
 static void I2C_Set_Own_Address(I2C_Handle_t *p_i2c_handle)
@@ -284,10 +293,8 @@ static void I2C_Set_Own_Address(I2C_Handle_t *p_i2c_handle)
 	// clear top bit of own address (in case user sent 8 bit address)
 	p_i2c_handle->i2c_config.dev_addr &= ~(1 << 8);
 	// clear 7-bit address field, then set address
-	p_i2c_handle->p_i2c_x->OAR1 &= ~(0x7F << 1);
-	p_i2c_handle->p_i2c_x->OAR1 |= (p_i2c_handle->i2c_config.dev_addr << 1);
-
-	// 14th bit must be kept high
-	p_i2c_handle->p_i2c_x->OAR1 |= (1 << 14);
+	SET_FIELD(&p_i2c_handle->p_i2c_x->OAR1, I2C_OAR1_ADD_1_7_MASK, p_i2c_handle->i2c_config.dev_addr);
+	// 14th bit must be kept high (unsure why)
+	SET_BIT(&p_i2c_handle->p_i2c_x->OAR1, (1 << 14));
 }
 

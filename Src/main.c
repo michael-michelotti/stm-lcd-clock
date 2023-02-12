@@ -20,7 +20,9 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
+#include "globals.h"
 #include "stm32f407xx.h"
 #include "ds3231_rtc_driver.h"
 #include "lcd1602a_driver.h"
@@ -29,8 +31,26 @@
   #warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
 #endif
 
+// DEFINE the global state variables which were initially DECLARED in globals.h
+// Any of the global state variables can be accessed from separate modules by including globals.h
+// Display strings for LCD (maximum size of 16 bytes), initiated with all null characters
+char global_time_str[16] = { '\0' };
+char global_date_str[16] = { '\0' };
+
+void init_global_state()
+{
+	// Initialize global LCD display strings with blank date and time
+	char *default_time = "00:00:00";
+	char *default_date = "00/00/0000";
+	strncpy(global_time_str, default_time, strlen(default_time));
+	strncpy(global_date_str, default_date, strlen(default_date));
+}
+
 int main(void)
 {
+	// initialize global state variables
+	init_global_state();
+
 	// PB10 = SCL, PB11 = SDA
 	GPIO_Pin_Config_t pb10 = { 10, GPIO_MODE_ALT, GPIO_SPEED_HIGH, GPIO_PUPD_NONE, GPIO_OUT_OD, 4 };
 	GPIO_Handle_t scl_handle = { GPIOB, pb10 };
@@ -53,6 +73,8 @@ int main(void)
 	DS3231_Datetime_t datetime = DS3231_Get_Full_Datetime(&i2c2_handle);
 
 	LCD_Initialize();
+
+	// LCD_Display_Str(date_display_string);
 
 	LCD_Update_Date_And_Time(datetime);
 

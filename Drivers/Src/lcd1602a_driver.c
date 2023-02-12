@@ -9,7 +9,10 @@
 
 #include "lcd1602a_driver.h"
 #include "stm32f407xx.h"
+#include "globals.h"
 
+static char int_to_ascii_char(uint8_t int_to_covert);
+static void int_to_zero_padded_ascii(char *result, uint8_t int_to_convert);
 static void write_char(char ch);
 static void write_command(uint8_t cmd_word, uint32_t address_setup_us);
 static void send_nybble(uint8_t nybble);
@@ -146,110 +149,107 @@ void LCD_Update_Date_And_Time(DS3231_Datetime_t datetime)
 }
 
 // PRIVATE UTILITY FUNCTIONS
+static char int_to_ascii_char(uint8_t int_to_covert)
+{
+	return int_to_covert + ASCII_DIGIT_OFFSET;
+}
+
+static void int_to_zero_padded_ascii(char *result, uint8_t int_to_convert)
+{
+	if (int_to_convert < 10)
+	{
+		result[0] = '0';
+		result[1] = int_to_ascii_char(int_to_convert);
+	}
+	else
+	{
+		result[0] = int_to_ascii_char(int_to_convert / 10);
+		result[1] = int_to_ascii_char(int_to_convert % 10);
+	}
+}
+
 static char *convert_date_to_str(DS3231_Full_Date_t date)
 {
-	// format MM/DD/YY
-	char *DATE_STR = (char *)malloc(9);
-	DATE_STR[8] = '\0';
+	char result_buffer[2] = { '\0' };
 
-	if (date.month < 10)
-	{
-		DATE_STR[0] = '0';
-		DATE_STR[1] = date.month + ASCII_DIGIT_OFFSET;
-	}
-	else
-	{
-		uint8_t month_tens_place = date.month / 10;
-		DATE_STR[0] = month_tens_place + ASCII_DIGIT_OFFSET;
-		uint8_t month_ones_place = date.month % 10;
-		DATE_STR[1] = month_ones_place + ASCII_DIGIT_OFFSET;
-	}
-	DATE_STR[2] = '/';
+	global_date_str[8] = '\0';
 
-	if (date.date < 10)
-	{
-		DATE_STR[3] = '0';
-		DATE_STR[4] = date.date + ASCII_DIGIT_OFFSET;
-	}
-	else
-	{
-		uint8_t date_tens_place = date.date / 10;
-		DATE_STR[3] = date_tens_place + ASCII_DIGIT_OFFSET;
-		uint8_t date_ones_place = date.date % 10;
-		DATE_STR[4] = date_ones_place + ASCII_DIGIT_OFFSET;
-	}
-	DATE_STR[5] = '/';
+	int_to_zero_padded_ascii(result_buffer, date.month);
+	global_date_str[0] = result_buffer[0];
+	global_date_str[1] = result_buffer[1];
+	global_date_str[2] = '/';
 
-	if (date.year < 10)
-	{
-		DATE_STR[6] = '0';
-		DATE_STR[7] = date.year + ASCII_DIGIT_OFFSET;
-	}
-	else
-	{
-		uint8_t year_tens_place = date.year / 10;
-		DATE_STR[6] = year_tens_place + ASCII_DIGIT_OFFSET;
-		uint8_t year_ones_place = date.year % 10;
-		DATE_STR[7] = year_ones_place + ASCII_DIGIT_OFFSET;
-	}
+	int_to_zero_padded_ascii(result_buffer, date.date);
+	global_date_str[3] = result_buffer[0];
+	global_date_str[4] = result_buffer[1];
+	global_date_str[5] = '/';
 
-	return DATE_STR;
+	int_to_zero_padded_ascii(result_buffer, date.year);
+	global_date_str[6] = result_buffer[0];
+	global_date_str[7] = result_buffer[1];
+
+	return global_date_str;
 }
 
 static char *convert_time_to_str(DS3231_Time_t time)
 {
-	// this is a memory leak right now - allocating memory for strings every time i call convert time
-	char *AM_PM_TIME_STR = (char *)malloc(12);
-	AM_PM_TIME_STR[11] = '\0';
-	char *NO_AM_PM_TIME_STR = (char *)malloc(9);
-	AM_PM_TIME_STR[8] = '\0';
-
-	char *time_str;
 	// format "HH:MM:SS AM"
-	// the way i'm doing this will be a problem if format switches from 12 to 24
-	if (time.hours.hour_12_24 == DS3231_12_HOUR)
-	{
-		time_str = AM_PM_TIME_STR;
-	}
-	else
-	{
-		time_str = NO_AM_PM_TIME_STR;
-	}
-
+	// manipulates the global time string, declared in globa
 	// convert hour number to HH
+	char result_buffer[2] = { '\0' };
+
+	int_to_zero_padded_ascii(result_buffer, time.hour);
+	global_time_str[0] = result_buffer[0];
+	global_time_str[1] = result_buffer[1];
+	global_time_str[2] = '/';
+
+	int_to_zero_padded_ascii(result_buffer, date.date);
+	global_time_str[3] = result_buffer[0];
+	global_time_str[4] = result_buffer[1];
+	global_time_str[5] = '/';
+
+	int_to_zero_padded_ascii(result_buffer, date.year);
+	global_time_str[6] = result_buffer[0];
+	global_time_str[7] = result_buffer[1];
+
 	uint8_t hour_tens_place = time.hours.hour / 10;
-	time_str[0] = hour_tens_place + ASCII_DIGIT_OFFSET;
+	global_time_str[0] = hour_tens_place + ASCII_DIGIT_OFFSET;
 	uint8_t hour_ones_place = time.hours.hour % 10;
-	time_str[1] = hour_ones_place + ASCII_DIGIT_OFFSET;
-	time_str[2] = ':';
+	global_time_str[1] = hour_ones_place + ASCII_DIGIT_OFFSET;
+	global_time_str[2] = ':';
 
 	// convert minutes to MM
 	uint8_t min_tens_place = time.minutes / 10;
-	time_str[3] = min_tens_place + ASCII_DIGIT_OFFSET;
+	global_time_str[3] = min_tens_place + ASCII_DIGIT_OFFSET;
 	uint8_t min_ones_place = time.minutes % 10;
-	time_str[4] = min_ones_place + ASCII_DIGIT_OFFSET;
-	time_str[5] = ':';
+	global_time_str[4] = min_ones_place + ASCII_DIGIT_OFFSET;
+	global_time_str[5] = ':';
 
 	// convert seconds to SS
 	uint8_t sec_tens_place = time.seconds / 10;
-	time_str[6] = sec_tens_place + ASCII_DIGIT_OFFSET;
+	global_time_str[6] = sec_tens_place + ASCII_DIGIT_OFFSET;
 	uint8_t sec_ones_place = time.seconds % 10;
-	time_str[7] = sec_ones_place + ASCII_DIGIT_OFFSET;
+	global_time_str[7] = sec_ones_place + ASCII_DIGIT_OFFSET;
 
 	if (time.hours.hour_12_24 == DS3231_12_HOUR)
 	{
-		time_str[8] = ' ';
+		global_time_str[8] = ' ';
 		if (time.hours.am_pm == DS3231_AM)
 		{
-			time_str[9] = 'A';
+			global_time_str[9] = 'A';
 		}
 		else if (time.hours.am_pm == DS3231_PM)
 		{
-			time_str[9] = 'P';
+			global_time_str[9] = 'P';
 		}
-		time_str[10] = 'M';
+		global_time_str[10] = 'M';
 	}
-	return time_str;
+	else
+	{
+		global_time_str[8] = '\0';
+	}
+
+	return global_time_str;
 }
 
 static void write_char(char ch)

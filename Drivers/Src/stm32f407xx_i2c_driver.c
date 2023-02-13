@@ -221,6 +221,34 @@ void I2C_Enable_Interrupts(I2C_Handle_t *p_i2c_handle)
 	}
 }
 
+void I2C_Set_Interrupt_Priority(I2C_Handle_t *p_i2c_handle, uint8_t priority)
+{
+	uint8_t ipr_num;
+	uint8_t byte_offset;
+	uint8_t bit_offset;
+
+	switch ((uint32_t) p_i2c_handle->p_i2c_x)
+	{
+	case I2C1_BASE_ADDR:
+		ipr_num = I2C1_EV_NVIC_POS / 4;
+		byte_offset = I2C1_EV_NVIC_POS % 4;
+		break;
+	case I2C2_BASE_ADDR:
+		ipr_num = I2C2_EV_NVIC_POS / 4;
+		byte_offset = I2C2_EV_NVIC_POS % 4;
+		break;
+	case I2C3_BASE_ADDR:
+		ipr_num = I2C3_EV_NVIC_POS / 4;
+		byte_offset = I2C3_EV_NVIC_POS % 4;
+		break;
+	}
+	bit_offset = byte_offset * 8;
+
+	uint32_t *p_ipr = NVIC_IPR_0 + ipr_num;
+	*p_ipr &= ~(priority << bit_offset);
+	*p_ipr |= (priority << bit_offset);
+}
+
 /*
 void I2C_Cleanup(I2C_Register_t *p_i2c_x);
 */

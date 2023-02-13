@@ -59,6 +59,9 @@ typedef struct
 #define I2C_EVENT_RXNE				64
 #define I2C_EVENT_TXE				128
 
+#define I2C_STATE_TX				0
+#define I2C_STATE_RX				1
+
 /*************** RELEVANT BIT POSITIONS FOR I2C PERIPHERAL REGISTERS *****************/
 // I2C_CR1 bit positions - General control register
 #define I2C_CR1_PE						0		// Peripheral enable; basically on/off switch
@@ -214,7 +217,16 @@ void I2C_Master_Receive(I2C_Handle_t *p_i2c_handle, uint8_t *p_rx_buffer, uint32
 void I2C_Generate_Start_Condition(I2C_Handle_t *p_i2c_handle);
 void I2C_Generate_Stop_Condition(I2C_Handle_t *p_i2c_handle);
 
+void I2C_Handle_SB(uint8_t tx_rx_state);
+void I2C_Handle_ADDR_TX(void);
+void I2C_Handle_ADDR_RX(uint8_t rx_len);
+void I2C_Handle_TXE(void);
+void I2C_Handle_RXNE(void);
+
 void I2C_Enable_Interrupts();
+void I2C_Set_Interrupt_Priority(I2C_Handle_t *p_i2c_handle, uint8_t priority);
+uint8_t I2C_Check_Status_Flag(I2C_Handle_t *p_i2c_handle, uint8_t flag_num, uint8_t sr_1_or_2);
+void I2C_Write_Address_Byte(I2C_Handle_t *p_i2c_handle, uint8_t slave_addr, uint8_t read_or_write);
 /*
 void I2C_Cleanup(I2C_Register_t *p_i2c_x);
 */

@@ -57,7 +57,7 @@ void init_global_state()
 	global_i2c_handle.p_rx_buffer = rx_buffer;
 	global_i2c_handle.tx_len = 0;
 	global_i2c_handle.rx_len = 0;
-	global_i2c_handle.tx_rx_state = 0;
+	global_i2c_handle.tx_rx_state = I2C_STATE_TX;
 	global_i2c_handle.dev_addr = DS3231_SLAVE_ADDR;
 	global_i2c_handle.rx_size = 0;
 	global_i2c_handle.sr = 0;
@@ -100,59 +100,36 @@ int main(void)
 	for(;;);
 }
 
-void I2C_Handle_EV5(void)
-{
-	// just need to set the DR equal to the slave address
-	I2C_Write_Address_Byte(global_i2c_handle, DS3231_SLAVE_ADDR, I2C_WRITE);
-}
-
-void I2C_Handle_EV6(void)
-{
-	// address has been acknowledged, clear this by reading from SR2
-	// read TRA bit to see whether a read or write was acknowledged
-	I2C_Check_Status_Flag(global_i2c_handle, I2C_SR2_TRA, I2C_SR2_CHECK);
-}
-
-void I2C_Handle_EV8_1(void)
-{
-	if (global_i2c_handle.tx_len == 0)
-	{
-		// if i'm out of data to send, need to generate a stop condition
-		// once length becomes 0, wait for txe=1 and btf=1, then generate stop condition
-		while (!I2C_Check_Status_Flag(global_i2c_handle, I2C_SR1_TXE, I2C_SR1_CHECK));
-		while (!I2C_Check_Status_Flag(global_i2c_handle, I2C_SR1_BTF, I2C_SR1_CHECK));
-		I2C_Generate_Stop_Condition(global_i2c_handle);
-	}
-
-	// DR is empty, shift register may or may not be empty. Either way, write next byte into DR
-	global_i2c_handle.p_i2c_x->DR = *global_i2c_handle.p_tx_buffer;
-	global_i2c_handle.p_tx_buffer++;
-	global_i2c_handle.tx_len--;
-}
-
 void I2C2_EV_IRQHandler(void)
 {
 	// bottom byte of the SR1 register indicate which event we are handling
 	uint8_t event_to_handle = (global_i2c_handle.p_i2c_x->SR1 & 0xFF );
 
+	uint8_t tx_rx_state = global_i2c_handle.tx_rx_state;
+
 	switch (event_to_handle)
 	{
 	case I2C_EVENT_SB:
-		I2C_Handle_EV5();
+		I2C_Handle_SB(tx_rx_state);
 		break;
 	case I2C_EVENT_ADDR:
-		I2C_Handle_EV6();
+		if (tx_rx_state == I2C_STATE_TX)
+			I2C_Handle_ADDR_TX();
+		else
+			I2C_Handle_ADDR_RX(global_i2c_handle.rx_len);
 		break;
 	case I2C_EVENT_BTF:
+		I2C_Handle_TXE();
 		break;
 	case I2C_EVENT_ADD10:
 		break;
 	case I2C_EVENT_STOPF:
 		break;
 	case I2C_EVENT_RXNE:
+		I2C_Handle_RXNE();
 		break;
 	case I2C_EVENT_TXE:
-		I2C_Handle_EV8_1();
+		I2C_Handle_TXE();
 		break;
 	}
 }

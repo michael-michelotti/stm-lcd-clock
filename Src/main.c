@@ -37,6 +37,11 @@
 char global_time_str[16] = { '\0' };
 char global_date_str[16] = { '\0' };
 
+I2C_Handle_t global_i2c_handle = { '\0' };
+
+uint8_t rx_buffer[256];
+uint8_t tx_buffer[256];
+
 void init_global_state()
 {
 	// Initialize global LCD display strings with blank date and time
@@ -44,6 +49,18 @@ void init_global_state()
 	char *default_date = "00/00/0000";
 	strncpy(global_time_str, default_time, strlen(default_time));
 	strncpy(global_date_str, default_date, strlen(default_date));
+
+	I2C_Config_t init_config = { I2C_SPEED_SM, 0x62, 1, I2C_FM_DUTY_2 };
+	global_i2c_handle.p_i2c_x = I2C2;
+	global_i2c_handle.i2c_config = init_config;
+	global_i2c_handle.p_tx_buffer = tx_buffer;
+	global_i2c_handle.p_rx_buffer = rx_buffer;
+	global_i2c_handle.tx_len = 0;
+	global_i2c_handle.rx_len = 0;
+	global_i2c_handle.tx_rx_state = 0;
+	global_i2c_handle.dev_addr = DS3231_SLAVE_ADDR;
+	global_i2c_handle.rx_size = 0;
+	global_i2c_handle.sr = 0;
 }
 
 int main(void)
@@ -81,4 +98,61 @@ int main(void)
 	LCD_Power_Switch(OFF);
 
 	for(;;);
+}
+
+void I2C_Handle_EV5(void)
+{
+	// just need to set the DR equal to the slave address
+	I2C_Write_Address_Byte(global_i2c_handle, DS3231_SLAVE_ADDR, I2C_WRITE);
+}
+
+void I2C_Handle_EV6(void)
+{
+	// address has been acknowledged, clear this by reading from SR2
+	// read TRA bit to see whether a read or write was acknowledged
+	I2C_Check_Status_Flag(global_i2c_handle, I2C_SR2_TRA, I2C_SR2_CHECK);
+}
+
+void I2C_Handle_EV8_1(void)
+{
+	if (global_i2c_handle.tx_len == 0)
+	{
+		// if i'm out of data to send, need to generate a stop condition
+		// once length becomes 0, wait for txe=1 and btf=1, then generate stop condition
+		while (!I2C_Check_Status_Flag(global_i2c_handle, I2C_SR1_TXE, I2C_SR1_CHECK));
+		while (!I2C_Check_Status_Flag(global_i2c_handle, I2C_SR1_BTF, I2C_SR1_CHECK));
+		I2C_Generate_Stop_Condition(global_i2c_handle);
+	}
+
+	// DR is empty, shift register may or may not be empty. Either way, write next byte into DR
+	global_i2c_handle.p_i2c_x->DR = *global_i2c_handle.p_tx_buffer;
+	global_i2c_handle.p_tx_buffer++;
+	global_i2c_handle.tx_len--;
+}
+
+void I2C2_EV_IRQHandler(void)
+{
+	// bottom byte of the SR1 register indicate which event we are handling
+	uint8_t event_to_handle = (global_i2c_handle.p_i2c_x->SR1 & 0xFF );
+
+	switch (event_to_handle)
+	{
+	case I2C_EVENT_SB:
+		I2C_Handle_EV5();
+		break;
+	case I2C_EVENT_ADDR:
+		I2C_Handle_EV6();
+		break;
+	case I2C_EVENT_BTF:
+		break;
+	case I2C_EVENT_ADD10:
+		break;
+	case I2C_EVENT_STOPF:
+		break;
+	case I2C_EVENT_RXNE:
+		break;
+	case I2C_EVENT_TXE:
+		I2C_Handle_EV8_1();
+		break;
+	}
 }

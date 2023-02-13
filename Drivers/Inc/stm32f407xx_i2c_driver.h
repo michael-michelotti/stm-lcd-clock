@@ -32,6 +32,33 @@ typedef struct
     uint8_t         	sr;				// Repeated start value
 } I2C_Handle_t;
 
+// Clock speed options
+#define I2C_SPEED_SM				100000		// 100kHz clock for standard mode
+#define I2C_SPEED_FM				400000		// 400kHz clock for fast mode
+
+// Enable or disable acknowledge bit after data bit
+#define I2C_ACK_EN        			1
+#define I2C_ACK_DI			    	0
+
+#define I2C1_EV_NVIC_POS			31
+#define I2C1_ER_NVIC_POS			32
+#define I2C2_EV_NVIC_POS			33
+#define I2C2_ER_NVIC_POS			34
+#define I2C3_EV_NVIC_POS			72
+#define I2C3_ER_NVIC_POS			73
+
+// 2:1 or 16:9 for Tlow:Thigh clock signal (only applicable to fast mode)
+#define I2C_FM_DUTY_2        		0
+#define I2C_FM_DUTY_16_9     		1
+
+#define I2C_EVENT_SB				1
+#define I2C_EVENT_ADDR				2
+#define I2C_EVENT_BTF				4
+#define I2C_EVENT_ADD10				8
+#define I2C_EVENT_STOPF				16
+#define I2C_EVENT_RXNE				64
+#define I2C_EVENT_TXE				128
+
 /*************** RELEVANT BIT POSITIONS FOR I2C PERIPHERAL REGISTERS *****************/
 // I2C_CR1 bit positions - General control register
 #define I2C_CR1_PE						0		// Peripheral enable; basically on/off switch
@@ -150,18 +177,6 @@ typedef enum
 
 #define I2C_TRISE_TRISE 				0		// Controls maximum clock rise time in master mode; 6 bits, 0 to 5
 
-// Clock speed options
-#define I2C_SPEED_SM				100000		// 100kHz clock for standard mode
-#define I2C_SPEED_FM				400000		// 400kHz clock for fast mode
-
-// Enable or disable acknowledge bit after data bit
-#define I2C_ACK_EN        			1
-#define I2C_ACK_DI			    	0
-
-// 2:1 or 16:9 for Tlow:Thigh clock signal (only applicable to fast mode)
-#define I2C_FM_DUTY_2        		0
-#define I2C_FM_DUTY_16_9     		1
-
 // Macros to check flags in status register 1
 #define I2C_FLAG_TXE   				(1 << I2C_SR1_TXE)
 #define I2C_FLAG_RXNE   			(1 << I2C_SR1_RXNE)
@@ -198,6 +213,8 @@ void I2C_Master_Receive(I2C_Handle_t *p_i2c_handle, uint8_t *p_rx_buffer, uint32
 
 void I2C_Generate_Start_Condition(I2C_Handle_t *p_i2c_handle);
 void I2C_Generate_Stop_Condition(I2C_Handle_t *p_i2c_handle);
+
+void I2C_Enable_Interrupts();
 /*
 void I2C_Cleanup(I2C_Register_t *p_i2c_x);
 */

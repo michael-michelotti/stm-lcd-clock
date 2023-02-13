@@ -182,11 +182,52 @@ void I2C_Generate_Stop_Condition(I2C_Handle_t *p_i2c_handle)
 	SET_BIT(&p_i2c_handle->p_i2c_x->CR1, I2C_CR1_STOP_MASK);
 }
 
+void I2C_Enable_Interrupts(I2C_Handle_t *p_i2c_handle)
+{
+	// determine which ISER register (0-7) will be used
+	uint8_t iser_num;
+	uint8_t bit_pos;
+
+	switch ((uint32_t) p_i2c_handle->p_i2c_x)
+	{
+	case I2C1_BASE_ADDR:
+		iser_num = I2C1_EV_NVIC_POS / 32;
+		bit_pos = I2C1_EV_NVIC_POS % 32;
+		break;
+	case I2C2_BASE_ADDR:
+		iser_num = I2C2_EV_NVIC_POS / 32;
+		bit_pos = I2C2_EV_NVIC_POS % 32;
+		break;
+	case I2C3_BASE_ADDR:
+		iser_num = I2C3_EV_NVIC_POS / 32;
+		bit_pos = I2C3_EV_NVIC_POS % 32;
+		break;
+	}
+
+	switch (iser_num)
+	{
+	case 0:
+		NVIC_ISER_0 |= (1 << bit_pos);
+		break;
+	case 1:
+		NVIC_ISER_1 |= (1 << bit_pos);
+		break;
+	case 2:
+		NVIC_ISER_2 |= (1 << bit_pos);
+		break;
+	case 3:
+		NVIC_ISER_3 |= (1 << bit_pos);
+		break;
+	}
+}
+
 /*
 void I2C_Cleanup(I2C_Register_t *p_i2c_x);
 */
 
 /*************** PRIVATE UTILITY FUNCTIONS *****************/
+
+
 static uint8_t I2C_Check_Status_Flag(I2C_Handle_t *p_i2c_handle, uint8_t flag_num, uint8_t sr_1_or_2)
 {
 	// 0 = SR1, 1 = SR2

@@ -198,38 +198,19 @@ static char *convert_time_to_str(DS3231_Time_t time)
 	// convert hour number to HH
 	char result_buffer[2] = { '\0' };
 
-	int_to_zero_padded_ascii(result_buffer, time.hour);
+	int_to_zero_padded_ascii(result_buffer, time.hours.hour);
 	global_time_str[0] = result_buffer[0];
 	global_time_str[1] = result_buffer[1];
-	global_time_str[2] = '/';
-
-	int_to_zero_padded_ascii(result_buffer, date.date);
-	global_time_str[3] = result_buffer[0];
-	global_time_str[4] = result_buffer[1];
-	global_time_str[5] = '/';
-
-	int_to_zero_padded_ascii(result_buffer, date.year);
-	global_time_str[6] = result_buffer[0];
-	global_time_str[7] = result_buffer[1];
-
-	uint8_t hour_tens_place = time.hours.hour / 10;
-	global_time_str[0] = hour_tens_place + ASCII_DIGIT_OFFSET;
-	uint8_t hour_ones_place = time.hours.hour % 10;
-	global_time_str[1] = hour_ones_place + ASCII_DIGIT_OFFSET;
 	global_time_str[2] = ':';
 
-	// convert minutes to MM
-	uint8_t min_tens_place = time.minutes / 10;
-	global_time_str[3] = min_tens_place + ASCII_DIGIT_OFFSET;
-	uint8_t min_ones_place = time.minutes % 10;
-	global_time_str[4] = min_ones_place + ASCII_DIGIT_OFFSET;
+	int_to_zero_padded_ascii(result_buffer, time.minutes);
+	global_time_str[3] = result_buffer[0];
+	global_time_str[4] = result_buffer[1];
 	global_time_str[5] = ':';
 
-	// convert seconds to SS
-	uint8_t sec_tens_place = time.seconds / 10;
-	global_time_str[6] = sec_tens_place + ASCII_DIGIT_OFFSET;
-	uint8_t sec_ones_place = time.seconds % 10;
-	global_time_str[7] = sec_ones_place + ASCII_DIGIT_OFFSET;
+	int_to_zero_padded_ascii(result_buffer, time.seconds);
+	global_time_str[6] = result_buffer[0];
+	global_time_str[7] = result_buffer[1];
 
 	if (time.hours.hour_12_24 == DS3231_12_HOUR)
 	{
@@ -243,6 +224,7 @@ static char *convert_time_to_str(DS3231_Time_t time)
 			global_time_str[9] = 'P';
 		}
 		global_time_str[10] = 'M';
+		global_time_str[11] = '\0';
 	}
 	else
 	{

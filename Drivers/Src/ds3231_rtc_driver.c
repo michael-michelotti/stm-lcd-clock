@@ -6,6 +6,7 @@
  */
 
 #include "ds3231_rtc_driver.h"
+#include "globals.h"
 
 #include <stdlib.h>
 
@@ -37,11 +38,27 @@ static uint8_t *Convert_Dateime_To_DS3231(DS3231_Datetime_t datetime);
 /*************** GENERAL UTILITY FUNCTIONS *****************/
 static void Read_From_DS3231(I2C_Handle_t *p_i2c_handle, uint8_t *p_rx_buffer, uint8_t ds3231_addr, uint8_t len);
 static void Write_To_DS3231(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint8_t ds3231_addr, uint8_t len);
+static void Write_To_DS3231_IT(uint8_t *p_tx_buffer, uint8_t len);
 static uint8_t Convert_Hours_12_24(uint8_t current_byte, DS3231_12_24_Hour_t new_mode);
 static uint8_t Convert_Binary_To_BCD(uint8_t binary_byte);
 static uint8_t Convert_BCD_To_Binary(uint8_t bcd_byte);
 
 /*************** CLOCK MODULE GETTER FUNCTIONS *****************/
+static void Read_From_DS3231_IT(uint8_t len)
+{
+	// Configure global I2C handle for transmission of 1 byte, start transmission
+	global_i2c_handle.slave_addr = DS3231_SLAVE_ADDR;
+
+	for (int i = 0; i < 100000; i++);
+
+	// Configure I2C handle for reception, receive `len` bytes
+	global_i2c_handle.p_tx_buffer = rx_buffer;
+	global_i2c_handle.tx_rx_state = I2C_STATE_RX;
+	global_i2c_handle.rx_len = len;
+	global_i2c_handle.sr = I2C_DISABLE_SR;
+	I2C_Generate_Start_Condition(&global_i2c_handle);
+}
+
 static void Read_From_DS3231(I2C_Handle_t *p_i2c_handle, uint8_t *p_rx_buffer, uint8_t ds3231_addr, uint8_t len)
 {
 	uint8_t p_tx_buffer[1] = { ds3231_addr };
@@ -49,9 +66,21 @@ static void Read_From_DS3231(I2C_Handle_t *p_i2c_handle, uint8_t *p_rx_buffer, u
 	I2C_Master_Receive(p_i2c_handle, p_rx_buffer, len, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
 }
 
+static void Write_To_DS3231_IT(uint8_t *p_tx_buffer, uint8_t len)
+{
+	// do not need SR for a write command - will never be switching from write to read
+	I2C_Master_Send_IT(p_tx_buffer, len, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
+}
+
 static void Write_To_DS3231(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint8_t ds3231_addr, uint8_t len)
 {
 	I2C_Master_Send(p_i2c_handle, p_tx_buffer, len, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
+}
+
+uint8_t DS3231_Get_Seconds_IT()
+{
+	Read_From_DS3231_IT(1);
+	return Convert_Seconds_From_DS3231(*global_i2c_handle.p_rx_buffer);
 }
 
 uint8_t DS3231_Get_Seconds(I2C_Handle_t *p_i2c_handle)
@@ -167,7 +196,7 @@ void DS3231_Set_Seconds(I2C_Handle_t *p_i2c_handle, uint8_t seconds)
 {
 	// handle, tx buffer, secs, len
 	uint8_t p_tx_buffer[2] = { DS3231_SECONDS, Convert_Seconds_To_DS3231(seconds) };
-	Write_To_DS3231(p_i2c_handle, p_tx_buffer, DS3231_SECONDS, 2);
+	Write_To_DS3231_IT(p_tx_buffer, 2);
 }
 
 void DS3231_Set_Minutes(I2C_Handle_t *p_i2c_handle, uint8_t minutes)

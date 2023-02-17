@@ -57,8 +57,8 @@ void init_global_state()
 	global_i2c_handle.p_rx_buffer = rx_buffer;
 	global_i2c_handle.tx_len = 0;
 	global_i2c_handle.rx_len = 0;
-	global_i2c_handle.tx_rx_state = I2C_STATE_TX;
-	global_i2c_handle.dev_addr = DS3231_SLAVE_ADDR;
+	global_i2c_handle.tx_rx_state = 0;
+	global_i2c_handle.slave_addr = DS3231_SLAVE_ADDR;
 	global_i2c_handle.rx_size = 0;
 	global_i2c_handle.sr = 0;
 }
@@ -77,6 +77,14 @@ int main(void)
 	GPIO_Handle_t sda_handle = { GPIOB, pb11 };
 	GPIO_Init(&sda_handle);
 
+	GPIO_Pin_Config_t toggle = { 0, GPIO_MODE_OUT, GPIO_SPEED_HIGH, GPIO_PUPD_NONE, GPIO_OUT_PP, 0 };
+	GPIO_Handle_t tog_handle = { GPIOE, toggle };
+	GPIO_Init(&tog_handle);
+
+	I2C_Init(&global_i2c_handle);
+	DS3231_Set_Seconds(&global_i2c_handle, 35);
+
+	/*
 	// configure I2C SDA and SCL pins
 	I2C_Config_t i2c2_conf = { I2C_SPEED_SM, 0x62, I2C_ACK_EN, I2C_FM_DUTY_2 };
 	I2C_Handle_t i2c2_handle = { I2C2, i2c2_conf, 0, 0, 0, 0, 0, DS3231_SLAVE_ADDR, 0, 0 };
@@ -96,40 +104,38 @@ int main(void)
 	LCD_Update_Date_And_Time(datetime);
 
 	LCD_Power_Switch(OFF);
+	*/
 
-	for(;;);
+	for(;;)
+	{
+	}
 }
 
 void I2C2_EV_IRQHandler(void)
 {
 	// bottom byte of the SR1 register indicate which event we are handling
 	uint8_t event_to_handle = (global_i2c_handle.p_i2c_x->SR1 & 0xFF );
-
 	uint8_t tx_rx_state = global_i2c_handle.tx_rx_state;
 
-	switch (event_to_handle)
+	// Handle EV5 - SB is set
+	if (GET_BIT(&global_i2c_handle.p_i2c_x->SR1, I2C_SR1_SB_MASK))
 	{
-	case I2C_EVENT_SB:
 		I2C_Handle_SB(tx_rx_state);
-		break;
-	case I2C_EVENT_ADDR:
-		if (tx_rx_state == I2C_STATE_TX)
-			I2C_Handle_ADDR_TX();
-		else
-			I2C_Handle_ADDR_RX(global_i2c_handle.rx_len);
-		break;
-	case I2C_EVENT_BTF:
-		I2C_Handle_TXE();
-		break;
-	case I2C_EVENT_ADD10:
-		break;
-	case I2C_EVENT_STOPF:
-		break;
-	case I2C_EVENT_RXNE:
-		I2C_Handle_RXNE();
-		break;
-	case I2C_EVENT_TXE:
-		I2C_Handle_TXE();
-		break;
+		return;
 	}
+	// Handle EV6 - ADDR is set
+	else if (GET_BIT(&global_i2c_handle.p_i2c_x->SR1, I2C_SR1_ADDR_MASK))
+	{
+		I2C_Handle_ADDR_TX();
+		return;
+	}
+	// Handle EV8_1, EV8_2 and EV8 - both shift register and DR empty
+	else if (GET_BIT(&global_i2c_handle.p_i2c_x->SR1, I2C_SR1_TXE_MASK))
+	{
+		// if both TXE and BTF high, then both SR and DR are empty
+		// does it matter? just load DR either way
+		I2C_Handle_TXE();
+		return;
+	}
+
 }

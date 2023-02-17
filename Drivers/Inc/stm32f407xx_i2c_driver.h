@@ -27,7 +27,7 @@ typedef struct
 	uint32_t 			tx_len;			// Length of data to be transmitted
 	uint32_t 			rx_len;			// Length of data to be received
 	uint8_t 			tx_rx_state;	// Whether board is transmitting or receiving
-	uint8_t 			dev_addr;		// Slave device address
+	uint8_t 			slave_addr;		// Slave device address
     uint32_t        	rx_size;		//
     uint8_t         	sr;				// Repeated start value
 } I2C_Handle_t;
@@ -212,6 +212,7 @@ void I2C_Peri_Clk_Ctrl(I2C_Register_Map_t *p_i2c_x, uint8_t enable);
 void I2C_Init(I2C_Handle_t *p_i2c_handle);
 void I2C_Peripheral_Power_Switch(I2C_Register_Map_t *p_i2c_x, uint8_t on_or_off);
 void I2C_Master_Send(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr,uint8_t sr);
+void I2C_Master_Send_IT(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr);
 void I2C_Master_Receive(I2C_Handle_t *p_i2c_handle, uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr);
 
 void I2C_Generate_Start_Condition(I2C_Handle_t *p_i2c_handle);

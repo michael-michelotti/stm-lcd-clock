@@ -117,6 +117,7 @@ typedef struct
 } DS3231_Datetime_t;
 
 // Functions which retrieve data from the DS3231 clock module
+uint8_t DS3231_Get_Seconds_IT();
 uint8_t DS3231_Get_Seconds(I2C_Handle_t *p_i2c_handle);
 uint8_t DS3231_Get_Minutes(I2C_Handle_t *p_i2c_handle);
 DS3231_Hours_t DS3231_Get_Hours(I2C_Handle_t *p_i2c_handle);

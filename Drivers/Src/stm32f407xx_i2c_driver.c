@@ -64,6 +64,7 @@ void I2C_Init(I2C_Handle_t *p_i2c_handle)
 	I2C_Peri_Clk_Ctrl(p_i2c_handle->p_i2c_x, ENABLE);
 
 	SET_BIT(&p_i2c_handle->p_i2c_x->CR2, I2C_CR2_ITEVTEN_MASK);
+	SET_BIT(&p_i2c_handle->p_i2c_x->CR2, I2C_CR2_ITBUFEN_MASK);
 
 	// configure frequency and CCR
 	I2C_Configure_Clock_Registers(p_i2c_handle);
@@ -88,6 +89,22 @@ void I2C_Init(I2C_Handle_t *p_i2c_handle)
 void I2C_Peripheral_Power_Switch(I2C_Register_Map_t *p_i2c_x, uint8_t on_or_off)
 {
 	SET_BIT(&p_i2c_x->CR1, I2C_CR1_PE_MASK);
+}
+
+void I2C_Master_Send_IT(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr)
+{
+	// reset TX buffer
+	global_i2c_handle.p_tx_buffer = tx_buffer;
+	// load global TX buffer with data at client TX buffer
+	for (int i = 0; i < len; i++)
+	{
+		tx_buffer[i] = p_tx_buffer[i];
+	}
+	global_i2c_handle.slave_addr = slave_addr;
+	global_i2c_handle.tx_rx_state = I2C_STATE_TX;
+	global_i2c_handle.tx_len = len;
+	global_i2c_handle.sr = sr;
+	I2C_Generate_Start_Condition(&global_i2c_handle);
 }
 
 void I2C_Master_Send(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr)
@@ -286,12 +303,12 @@ void I2C_Handle_ADDR_RX(uint8_t rx_len)
 
 void I2C_Handle_TXE(void)
 {
-	if (&global_i2c_handle.tx_len == 0)
+	if (global_i2c_handle.tx_len == 0)
 	{
-		// if i'm out of data to send, need to generate a stop condition
+		// if btf isn't set, transmission isn't done, wait for btf before stop
+		if (!I2C_Check_Status_Flag(&global_i2c_handle, I2C_SR1_BTF, I2C_SR1_CHECK))
+			return;
 		// once length becomes 0, wait for txe=1 and btf=1, then generate stop condition
-		while (!I2C_Check_Status_Flag(&global_i2c_handle, I2C_SR1_TXE, I2C_SR1_CHECK));
-		while (!I2C_Check_Status_Flag(&global_i2c_handle, I2C_SR1_BTF, I2C_SR1_CHECK));
 		I2C_Generate_Stop_Condition(&global_i2c_handle);
 	}
 

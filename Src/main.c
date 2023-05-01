@@ -16,15 +16,15 @@
  ******************************************************************************
  */
 
-#include "string.h"
+#include <string.h>
 #include <stdint.h>
 #include <stddef.h>
-#include "stdio.h"
+#include <stdio.h>
 
 #include "globals.h"
 #include "stm32f407xx.h"
 #include "clock.h"
-#include "lcd1602a_driver.h"
+#include "display.h"
 
 #if !defined(__SOFT_FP__) && defined(__ARM_FP)
   #warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
@@ -32,26 +32,7 @@
 
 HAL_Driver 		app_hal_driver = stm32f407xx_hal_driver;
 Clock_Driver 	app_clock_driver = ds3231_clock_driver;
-
-// DEFINE the global state variables which were initially DECLARED in globals.h
-// Any of the global state variables can be accessed from separate modules by including globals.h
-// Display strings for LCD (maximum size of 16 bytes), initiated with all null characters
-char global_time_str[16] = { '\0' };
-char global_date_str[16] = { '\0' };
-
-uint8_t rx_buffer[255];
-uint8_t tx_buffer[255];
-uint8_t tx_buffer_pos = 0;
-uint8_t rx_buffer_pos = 0;
-
-void init_global_state()
-{
-	// Initialize global LCD display strings with blank date and time
-	char *default_time = "00:00:00";
-	char *default_date = "00/00/0000";
-	strncpy(global_time_str, default_time, strlen(default_time));
-	strncpy(global_date_str, default_date, strlen(default_date));
-}
+Display_Driver	app_display_driver = hd44780u_16x2_display_driver;
 
 int main(void)
 {
@@ -78,32 +59,4 @@ void Board_Init(void)
 	app_hal_driver.HAL_System_Clock_Config();
 	app_hal_driver.HAL_GPIO_Init();
 	app_hal_driver.HAL_I2C_Init();
-}
-
-void I2C2_EV_IRQHandler(void)
-{
-	// bottom byte of the SR1 register indicate which event we are handling
-	uint8_t event_to_handle = (global_i2c_handle.p_i2c_x->SR1 & 0xFF );
-	uint8_t tx_rx_state = global_i2c_handle.task_queue[global_i2c_handle.current_task].tx_or_rx;
-
-	// Handle EV5 - SB is set
-	if (GET_BIT(&global_i2c_handle.p_i2c_x->SR1, I2C_SR1_SB_MASK))
-	{
-		I2C_Handle_SB(tx_rx_state);
-		return;
-	}
-	// Handle EV6 - ADDR is set
-	else if (GET_BIT(&global_i2c_handle.p_i2c_x->SR1, I2C_SR1_ADDR_MASK))
-	{
-		I2C_Handle_ADDR();
-		return;
-	}
-	// Handle EV8_1, EV8_2 and EV8 - both shift register and DR empty
-	else if (GET_BIT(&global_i2c_handle.p_i2c_x->SR1, I2C_SR1_TXE_MASK))
-	{
-		// if both TXE and BTF high, then both SR and DR are empty
-		// does it matter? just load DR either way
-		I2C_Handle_TXE();
-		return;
-	}
 }

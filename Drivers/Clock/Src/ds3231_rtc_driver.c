@@ -44,6 +44,11 @@ static uint8_t Convert_Hours_12_24(uint8_t current_byte, DS3231_12_24_Hour_t new
 static uint8_t Convert_Binary_To_BCD(uint8_t binary_byte);
 static uint8_t Convert_BCD_To_Binary(uint8_t bcd_byte);
 
+uint8_t rx_buffer[255];
+uint8_t tx_buffer[255];
+uint8_t tx_buffer_pos = 0;
+uint8_t rx_buffer_pos = 0;
+
 /*************** CLOCK MODULE GETTER FUNCTIONS *****************/
 static void Read_From_DS3231_IT(uint8_t *p_rx_buffer, uint8_t ds3231_addr, uint8_t len)
 {

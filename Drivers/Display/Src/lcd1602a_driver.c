@@ -30,6 +30,13 @@ static void udelay(uint32_t cnt);
 static char *convert_time_to_str(DS3231_Time_t time);
 static char *convert_date_to_str(DS3231_Full_Date_t date);
 
+// DEFINE the global state variables which were initially DECLARED in globals.h
+// Any of the global state variables can be accessed from separate modules by including globals.h
+// Display strings for LCD (maximum size of 16 bytes), initiated with all null characters
+char global_time_str[16] = { '\0' };
+char global_date_str[16] = { '\0' };
+
+
 void LCD_Power_Switch(uint8_t on_or_off)
 {
 	// Power switch pin - PB7

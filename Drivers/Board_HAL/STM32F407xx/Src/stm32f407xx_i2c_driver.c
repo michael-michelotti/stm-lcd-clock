@@ -21,6 +21,34 @@ static void I2C_Set_CCR(I2C_Handle_t *p_i2c_handle, uint32_t sys_clk_freq);
 static void I2C_Configure_TRISE(I2C_Handle_t *p_i2c_handle, uint32_t sys_clk_freq);
 static void I2C_Set_Own_Address(I2C_Handle_t *p_i2c_handle);
 
+void I2C2_EV_IRQHandler(void)
+{
+	// bottom byte of the SR1 register indicate which event we are handling
+	uint8_t event_to_handle = (global_i2c_handle.p_i2c_x->SR1 & 0xFF );
+	uint8_t tx_rx_state = global_i2c_handle.task_queue[global_i2c_handle.current_task].tx_or_rx;
+
+	// Handle EV5 - SB is set
+	if (GET_BIT(&global_i2c_handle.p_i2c_x->SR1, I2C_SR1_SB_MASK))
+	{
+		I2C_Handle_SB(tx_rx_state);
+		return;
+	}
+	// Handle EV6 - ADDR is set
+	else if (GET_BIT(&global_i2c_handle.p_i2c_x->SR1, I2C_SR1_ADDR_MASK))
+	{
+		I2C_Handle_ADDR();
+		return;
+	}
+	// Handle EV8_1, EV8_2 and EV8 - both shift register and DR empty
+	else if (GET_BIT(&global_i2c_handle.p_i2c_x->SR1, I2C_SR1_TXE_MASK))
+	{
+		// if both TXE and BTF high, then both SR and DR are empty
+		// does it matter? just load DR either way
+		I2C_Handle_TXE();
+		return;
+	}
+}
+
 void I2C_Peri_Clk_Ctrl(I2C_Register_Map_t *p_i2c_x, uint8_t enable)
 {
 	if (enable == ENABLE)

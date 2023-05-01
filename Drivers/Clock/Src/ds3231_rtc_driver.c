@@ -1,10 +1,3 @@
-/*
- * ds3231_rtc_driver.c
- *
- *  Created on: Feb 1, 2023
- *      Author: Michael
- */
-
 #include "ds3231_rtc_driver.h"
 #include "globals.h"
 
@@ -44,26 +37,46 @@ static uint8_t Convert_Hours_12_24(uint8_t current_byte, DS3231_12_24_Hour_t new
 static uint8_t Convert_Binary_To_BCD(uint8_t binary_byte);
 static uint8_t Convert_BCD_To_Binary(uint8_t bcd_byte);
 
-uint8_t rx_buffer[255];
-uint8_t tx_buffer[255];
-uint8_t tx_buffer_pos = 0;
-uint8_t rx_buffer_pos = 0;
+DS3231_State_t ds3231_state = DS3231_STATE_IDLE;
+uint8_t i2c_rx_buffer[255];
+uint8_t i2c_tx_buffer[255];
+uint8_t i2c_tx_buffer_pos = 0;
+uint8_t i2c_rx_buffer_pos = 0;
+
+void DS3231_Initialize(void)
+{
+}
 
 /*************** CLOCK MODULE GETTER FUNCTIONS *****************/
-static void Read_From_DS3231_IT(uint8_t *p_rx_buffer, uint8_t ds3231_addr, uint8_t len)
+static void Read_From_DS3231_IT(uint8_t *p_rx_buffer, uint8_t len)
 {
-	// Configure global I2C handle for transmission of 1 byte, start transmission
-	// has to add two tasks to the global I2C handle, then call send IT
-	tx_buffer[tx_buffer_pos] = ds3231_addr;
-	I2C_Task_t reg_write_task = { tx_buffer, 1, DS3231_SLAVE_ADDR, I2C_ENABLE_SR, I2C_STATE_TX };
-	I2C_Task_t data_read_task = { rx_buffer, len, DS3231_SLAVE_ADDR, I2C_DISABLE_SR, I2C_STATE_RX };
+	// Before reading data from DS3231, you must write an 8-bit register pointer
+	ds3231_state = DS3231_STATE_WRITE_POINTER_FOR_READ;
+	i2c_tx_buffer[i2c_tx_buffer_pos] = ds3231_addr;
+	app_hal_driver->HAL_I2C_Write_IT(i2c_tx_buffer, 1, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
+}
 
-	global_i2c_handle.current_task = 0;
-	global_i2c_handle.num_tasks = 2;
-	global_i2c_handle.task_queue[0] = reg_write_task;
-	global_i2c_handle.task_queue[1] = data_read_task;
-
-	I2C_Generate_Start_Condition(&global_i2c_handle);
+void DS3231_I2C_Transfer_Complete_Callback(void)
+{
+	switch (ds3231_state)
+	{
+	case S3231_STATE_WRITING_POINTER_FOR_WRITE:
+		// finished writing pointer, ready to write data now!
+		ds3231_state = DS3231_STATE_WRITING_DATA;
+		app_hal_driver->HAL_I2C_Write_IT(i2c_tx_buffer, len, DS3231_SLAVE_ADDR, I2C_ENABLE_SR);
+	case DS3231_STATE_WRITE_POINTER_FOR_READ:
+		// finished writing pointer, ready to read data now!
+		ds3231_state = DS3231_STATE_READING_DATA;
+		app_hal_driver->HAL_I2C_Read_IT(i2c_rx_buffer, len, DS3231_SLAVE_ADDR, I2C_ENABLE_SR);
+		break;
+	case DS3231_STATE_READING_DATA | DS3231_STATE_WRITING_DATA:
+		// completed transaction, setting state to idle!
+		ds3231_state = DS3231_STATE_IDLE;
+		break;
+	default:
+		// state is not valid, returning an error status
+		return -1;
+	}
 }
 
 static void Read_From_DS3231(I2C_Handle_t *p_i2c_handle, uint8_t *p_rx_buffer, uint8_t ds3231_addr, uint8_t len)

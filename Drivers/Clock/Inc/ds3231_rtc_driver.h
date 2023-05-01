@@ -1,14 +1,16 @@
-/*
- * ds3231_rtc_driver.h
- *
- *  Created on: Feb 1, 2023
- *      Author: Michael
- */
-
 #ifndef INC_DS3231_RTC_DRIVER_H_
 #define INC_DS3231_RTC_DRIVER_H_
 
 #include "stm32f407xx.h"
+
+typedef enum
+{
+	DS3231_STATE_IDLE,
+	DS3231_STATE_WRITING_POINTER_FOR_READ,
+	DS3231_STATE_READING_DATA,
+	S3231_STATE_WRITING_POINTER_FOR_WRITE,
+	DS3231_STATE_WRITING_DATA
+} DS3231_State_t;
 
 // TODO: Decide if this should be an enum or not
 #define DS3231_BASE_ADDR			0x00
@@ -60,6 +62,8 @@
 
 #define DS3231_BLOCKING_CALL		0
 #define DS3231_INTERRUPT_CALL		1
+
+void DS3231_Initialize(void);
 
 // Functions which retrieve data from the DS3231 clock module
 seconds_t DS3231_Get_Seconds_IT();

@@ -2,6 +2,8 @@
 
 Clock_Driver ds3231_clock_driver =
 {
+	.Clock_Initialize			= DS3231_Initialize,
+
 	.Clock_Get_Seconds 			= DS3231_Get_Seconds,
 	.Clock_Get_Minutes 			= DS3231_Get_Minutes,
 	.Clock_Get_Hours 			= DS3231_Get_Hours,

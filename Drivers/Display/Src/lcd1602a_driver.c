@@ -36,6 +36,14 @@ static char *convert_date_to_str(DS3231_Full_Date_t date);
 char global_time_str[16] = { '\0' };
 char global_date_str[16] = { '\0' };
 
+void init_global_state()
+{
+	// Initialize global LCD display strings with blank date and time
+	char *default_time = "00:00:00";
+	char *default_date = "00/00/0000";
+	strncpy(global_time_str, default_time, strlen(default_time));
+	strncpy(global_date_str, default_date, strlen(default_date));
+}
 
 void LCD_Power_Switch(uint8_t on_or_off)
 {

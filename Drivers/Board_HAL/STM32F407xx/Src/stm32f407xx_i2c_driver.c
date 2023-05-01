@@ -47,6 +47,11 @@ void I2C2_EV_IRQHandler(void)
 		I2C_Handle_TXE();
 		return;
 	}
+	else if (GET_BIT(&global_i2c_handle.p_i2c_x->SR1, I2C_SR1_RXNE_MASK))
+	{
+		I2C_Handle_RXNE();
+		return;
+	}
 }
 
 void I2C_Peri_Clk_Ctrl(I2C_Register_Map_t *p_i2c_x, uint8_t enable)
@@ -145,21 +150,18 @@ void I2C_Master_Send_IT(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, 
 I2C_Master_Receive_IT(uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr)
 {
 	printf("Got here!\n");
+	I2C_Generate_Start_Condition(&global_i2c_handle);
 }
 
 void I2C_Handle_SB(uint8_t tx_rx_state)
 {
 	// just need to set the DR equal to the slave address
 	// needs to feed in I2C_WRITE for transmit, I2C_READ for receive
-	I2C_Task_t curr_task = global_i2c_handle.task_queue[global_i2c_handle.current_task];
-	I2C_Write_Address_Byte(&global_i2c_handle, curr_task.slave_addr, curr_task.tx_or_rx);
+	I2C_Write_Address_Byte(&global_i2c_handle);
 }
 
 void I2C_Handle_ADDR(void)
 {
-	// address has been acknowledged, clear this by reading from SR2
-	I2C_Task_t curr_task = global_i2c_handle.task_queue[global_i2c_handle.current_task];
-
 	if (curr_task.tx_or_rx == I2C_STATE_TX)
 	{
 		I2C_Check_Status_Flag(&global_i2c_handle, I2C_SR2_TRA, I2C_SR2_CHECK);
@@ -197,7 +199,7 @@ void I2C_Handle_TXE(void)
 			I2C_Generate_Stop_Condition(&global_i2c_handle);*/
 		SET_BIT(&global_i2c_handle.p_i2c_x->CR2, I2C_CR2_ITBUFEN_MASK);
 		// task is finished, call callback to run next task or end process
-		I2C_Interrupt_Callback();
+		DS3231_I2C_Transfer_Complete_Callback();
 	}
 
 	/*// DR is empty, shift register may or may not be empty. Either way, write next byte into DR
@@ -213,7 +215,18 @@ void I2C_Handle_TXE(void)
 
 void I2C_Handle_RXNE(void)
 {
+	if (global_i2c_handle.len )
+	{
+		// NACK must be sent on first byte
+		I2C_Ack_Control(p_i2c_handle->p_i2c_x, DISABLE);
+		while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_RXNE, I2C_SR1_CHECK));
+		I2C_Generate_Stop_Condition(p_i2c_handle);
+		*p_rx_buffer = p_i2c_handle->p_i2c_x->DR;
+		DS3231_I2C_Transfer_Complete_Callback();
+	}
+
 	uint8_t curr_task_num = global_i2c_handle.current_task;
+
 
 	*global_i2c_handle.task_queue[curr_task_num].p_buffer = global_i2c_handle.p_i2c_x->DR;
 	global_i2c_handle.task_queue[curr_task_num].p_buffer++;

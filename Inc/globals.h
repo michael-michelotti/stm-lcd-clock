@@ -22,4 +22,6 @@ extern uint8_t tx_buffer[255];
 extern uint8_t tx_buffer_pos;
 extern uint8_t rx_buffer_pos;
 
+extern HAL_Driver app_hal_driver;
+
 #endif /* GLOBALS_H_ */

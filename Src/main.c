@@ -30,9 +30,9 @@
   #warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
 #endif
 
-HAL_Driver 		app_hal_driver = stm32f407xx_hal_driver;
-Clock_Driver 	app_clock_driver = ds3231_clock_driver;
-Display_Driver	app_display_driver = hd44780u_16x2_display_driver;
+HAL_Driver 			app_hal_driver = stm32f407xx_hal_driver;
+Clock_Driver 		app_clock_driver = ds3231_clock_driver;
+Display_Driver		app_display_driver = hd44780u_16x2_display_driver;
 
 int main(void)
 {

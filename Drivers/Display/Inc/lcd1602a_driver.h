@@ -83,6 +83,7 @@ typedef enum
 #define IC_RS			9
 
 void LCD_Initialize();
+void LCD_Clear();
 void LCD_Set_Cursor(uint8_t row, uint8_t column);
 void LCD_Display_Char(char ch);
 void LCD_Display_Str(char *str);
@@ -93,5 +94,6 @@ void LCD_Update_Date_Format(char *fmt);
 void LCD_Update_Time(DS3231_Time_t time);
 void LCD_Update_Date(DS3231_Full_Date_t date);
 void LCD_Update_Date_And_Time(DS3231_Datetime_t datetime);
+void LCD_Increment_Second();
 
 #endif /* INC_LCD1602A_DRIVER_H_ */

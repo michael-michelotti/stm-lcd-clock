@@ -44,7 +44,10 @@ void STM32F407XX_I2C_Init(void)
 
 HAL_Driver stm32f407xx_hal_driver =
 {
-	.HAL_System_Clock_Config = STM32F407XX_System_Clock_Config,
-	.HAL_GPIO_Init = STM32F407XX_GPIO_Init,
-	.HAL_I2C_Init = STM32F407XX_I2C_Init
+	.HAL_System_Clock_Config 	= STM32F407XX_System_Clock_Config,
+	.HAL_GPIO_Init 				= STM32F407XX_GPIO_Init,
+	.HAL_I2C_Init 				= STM32F407XX_I2C_Init,
+	.HAL_I2C_Write_IT 			= I2C_Master_Send_IT,
+	.HAL_I2C_Read_IT 			= I2C_Master_Receive_IT,
+	.HAL_I2C_Handle 			= STM32F407XX_I2C_Handle
 };

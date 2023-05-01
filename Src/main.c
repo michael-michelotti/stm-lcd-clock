@@ -23,14 +23,15 @@
 
 #include "globals.h"
 #include "stm32f407xx.h"
-#include "ds3231_rtc_driver.h"
+#include "clock.h"
 #include "lcd1602a_driver.h"
 
 #if !defined(__SOFT_FP__) && defined(__ARM_FP)
   #warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
 #endif
 
-HAL_Driver app_hal_driver = stm32f407xx_hal_driver;
+HAL_Driver 		app_hal_driver = stm32f407xx_hal_driver;
+Clock_Driver 	app_clock_driver = ds3231_clock_driver;
 
 // DEFINE the global state variables which were initially DECLARED in globals.h
 // Any of the global state variables can be accessed from separate modules by including globals.h
@@ -59,35 +60,17 @@ int main(void)
 
 	I2C_Init(&global_i2c_handle, I2C_IT_EN);
 	//DS3231_Set_Seconds(&global_i2c_handle, 35, DS3231_BLOCKING_CALL);
-	uint8_t secs = DS3231_Get_Seconds(&global_i2c_handle);
+	seconds_t secs = app_clock_driver.Clock_Get_Seconds();
 
-	/*
-	// configure I2C SDA and SCL pins
-	I2C_Config_t i2c2_conf = { I2C_SPEED_SM, 0x62, I2C_ACK_EN, I2C_FM_DUTY_2 };
-	I2C_Handle_t i2c2_handle = { I2C2, i2c2_conf, 0, 0, 0, 0, 0, DS3231_SLAVE_ADDR, 0, 0 };
-	I2C_Init(&i2c2_handle);
+	full_time_t full_time = {
+			.hours = { HOUR_FORMAT_12_HOUR, AM_PM_PM, 9 },
+			.minutes = 47,
+			.seconds = 0
+	};
 
-	DS3231_Hours_t hrs = { DS3231_12_HOUR, DS3231_PM, 9 };
-	DS3231_Time_t time = { 0, 47, hrs };
+	app_clock_driver.Clock_Set_Full_Time(full_time_t);
 
-	DS3231_Datetime_t dt = { time, date };
-	// DS3231_Set_Full_Datetime(&i2c2_handle, dt);
-	DS3231_Datetime_t datetime = DS3231_Get_Full_Datetime(&i2c2_handle);
-
-	LCD_Initialize();
-
-	// LCD_Display_Str(date_display_string);
-
-	LCD_Update_Date_And_Time(datetime);
-
-	LCD_Power_Switch(OFF);
-	*/
-
-	for(;;)
-	{
-		//GPIO_Write_To_Output_Pin(global_gpio_handle.p_gpio_x, global_gpio_handle.gpio_pin_config.gpio_pin_num, HIGH);
-		//GPIO_Write_To_Output_Pin(global_gpio_handle.p_gpio_x, global_gpio_handle.gpio_pin_config.gpio_pin_num, LOW);
-	}
+	for(;;) {}
 }
 
 void Board_Init(void)

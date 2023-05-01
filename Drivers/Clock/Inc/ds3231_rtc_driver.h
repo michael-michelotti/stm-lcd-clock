@@ -45,94 +45,36 @@
 #define FULL_DATETIME_LEN			( (FULL_DATE_LEN) + (FULL_TIME_LEN) )
 
 // Minimum and maximum values for various fields, for validation purposes
-#define DS3231_MINIMUM_SECONDS				0
-#define DS3231_MAXIMUM_SECONDS				59
-#define DS3231_MINIMUM_MINUTES				0
-#define DS3231_MAXIMUM_MINUTES				59
-#define DS3231_MINIMUM_HOURS				0
-#define DS3231_MAXIMUM_HOURS				23
-#define DS3231_MINIMUM_DATE					1
-#define DS3231_MAXIMUM_DATE					31
-#define DS3231_MINIMUM_MONTH				1
-#define DS3231_MAXIMUM_MONTH				12
-#define DS3231_MINIMUM_YEAR					0
-#define DS3231_MAXIMUM_YEAR					99
+#define DS3231_MINIMUM_SECONDS		0
+#define DS3231_MAXIMUM_SECONDS		59
+#define DS3231_MINIMUM_MINUTES		0
+#define DS3231_MAXIMUM_MINUTES		59
+#define DS3231_MINIMUM_HOURS		0
+#define DS3231_MAXIMUM_HOURS		23
+#define DS3231_MINIMUM_DATE			1
+#define DS3231_MAXIMUM_DATE			31
+#define DS3231_MINIMUM_MONTH		1
+#define DS3231_MAXIMUM_MONTH		12
+#define DS3231_MINIMUM_YEAR			0
+#define DS3231_MAXIMUM_YEAR			99
 
-#define DS3231_BLOCKING_CALL				0
-#define DS3231_INTERRUPT_CALL				1
-
-typedef enum
-{
-	DS3231_24_HOUR,
-	DS3231_12_HOUR
-} DS3231_12_24_Hour_t;
-
-typedef enum
-{
-	DS3231_AM,
-	DS3231_PM,
-	DS3231_NO_AM_PM
-} DS3231_AM_PM_t;
-
-typedef enum
-{
-	DS3231_SUN = 1,
-	DS3231_MON,
-	DS3231_TUE,
-	DS3231_WED,
-	DS3231_THU,
-	DS3231_FRI,
-	DS3231_SAT
-} DS3231_Day_t;
-
-typedef struct
-{
-	uint8_t month;
-	uint8_t century;
-} DS3231_Month_Century_t;
-
-typedef struct
-{
-	DS3231_12_24_Hour_t 	hour_12_24;
-	DS3231_AM_PM_t			am_pm;
-	uint8_t					hour;
-} DS3231_Hours_t;
-
-typedef struct
-{
-	uint8_t seconds;
-	uint8_t minutes;
-	DS3231_Hours_t hours;
-} DS3231_Time_t;
-
-typedef struct
-{
-	DS3231_Day_t day;
-	uint8_t date;
-	uint8_t month;
-	uint8_t year;
-} DS3231_Full_Date_t;
-
-typedef struct
-{
-	DS3231_Time_t time;
-	DS3231_Full_Date_t date;
-} DS3231_Datetime_t;
+#define DS3231_BLOCKING_CALL		0
+#define DS3231_INTERRUPT_CALL		1
 
 // Functions which retrieve data from the DS3231 clock module
-uint8_t DS3231_Get_Seconds_IT();
-uint8_t DS3231_Get_Seconds(I2C_Handle_t *p_i2c_handle);
-uint8_t DS3231_Get_Minutes(I2C_Handle_t *p_i2c_handle);
-DS3231_Hours_t DS3231_Get_Hours(I2C_Handle_t *p_i2c_handle);
-DS3231_Day_t DS3231_Get_Day_Of_Week(I2C_Handle_t *p_i2c_handle);
-uint8_t DS3231_Get_Date(I2C_Handle_t *p_i2c_handle);
-uint8_t DS3231_Get_Month(I2C_Handle_t *p_i2c_handle);
+seconds_t DS3231_Get_Seconds_IT();
+seconds_t DS3231_Get_Seconds(I2C_Handle_t *p_i2c_handle);
+minutes_t DS3231_Get_Minutes(I2C_Handle_t *p_i2c_handle);
+hours_t DS3231_Get_Hours(I2C_Handle_t *p_i2c_handle);
+day_of_week_t DS3231_Get_Day_Of_Week(I2C_Handle_t *p_i2c_handle);
+date_t DS3231_Get_Date(I2C_Handle_t *p_i2c_handle);
+month_t DS3231_Get_Month(I2C_Handle_t *p_i2c_handle);
 uint8_t DS3231_Get_Century(I2C_Handle_t *p_i2c_handle);
 DS3231_Month_Century_t DS3231_Get_Month_Century(I2C_Handle_t *p_i2c_handle);
-uint8_t DS3231_Get_Year(I2C_Handle_t *p_i2c_handle);
-DS3231_Full_Date_t DS3231_Get_Full_Date(I2C_Handle_t *p_i2c_handle);
-DS3231_Time_t DS3231_Get_Full_Time(I2C_Handle_t *p_i2c_handle);
-DS3231_Datetime_t DS3231_Get_Full_Datetime(I2C_Handle_t *p_i2c_handle);
+year_t DS3231_Get_Year(I2C_Handle_t *p_i2c_handle);
+full_date_t DS3231_Get_Full_Date(I2C_Handle_t *p_i2c_handle);
+full_time_t DS3231_Get_Full_Time(I2C_Handle_t *p_i2c_handle);
+full_datetime_t DS3231_Get_Full_Datetime(I2C_Handle_t *p_i2c_handle);
 float DS3231_Get_Temp(I2C_Handle_t *p_i2c_handle);
 
 // Functions which set data in the DS3231 clock module

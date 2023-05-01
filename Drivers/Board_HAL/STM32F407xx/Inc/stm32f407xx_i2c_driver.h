@@ -1,10 +1,3 @@
-/*
- * stm32f407xx_i2c_driver.h
- *
- *  Created on: Jan 27, 2023
- *      Author: Michael
- */
-
 #ifndef STM32F407XX_I2C_DRIVER_H_
 #define STM32F407XX_I2C_DRIVER_H_
 
@@ -15,8 +8,22 @@ typedef struct
 	uint32_t		scl_speed;		// Clock speed
 	uint8_t			dev_addr;		// Boards own device address
 	uint8_t			ack_ctrl;		// Whether acknowledgment bit is enabled or disabled
-	uint8_t			fm_duty_cycle;	//
+	uint8_t			fm_duty_cycle;
 } I2C_Config_t;
+
+typedef struct
+{
+	I2C_Register_Map_t	*p_i2c_x;
+	I2C_Config_t		i2c_config;
+	uint8_t 			*p_tx_buffer; 	// Pointer to data being transmitted
+	uint8_t 			*p_rx_buffer;	// Pointer to data to be received
+	uint32_t 			tx_len;			// Length of data to be transmitted
+	uint32_t 			rx_len;			// Length of data to be received
+	uint8_t 			tx_rx_state;	// Whether board is transmitting or receiving
+	uint8_t 			slave_addr;		// Slave device address
+    uint32_t        	rx_size;		//
+    uint8_t         	sr;				// Repeated start value
+} I2C_Handle_t;
 
 typedef enum
 {
@@ -31,7 +38,6 @@ typedef enum
 	SYS_CLK_PLL,
 	SYS_CLK_NA
 } System_Clock_t;
-
 
 // Clock speed options
 #define I2C_SPEED_SM				100000		// 100kHz clock for standard mode

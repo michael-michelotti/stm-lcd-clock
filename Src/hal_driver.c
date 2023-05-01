@@ -2,12 +2,30 @@
 #include "stm32f407xx_gpio_driver.h"
 #include "stm32f407xx_i2c_driver.h"
 
-I2C_Handle_t global_i2c_handle = { '\0' };
-GPIO_Handle_t global_gpio_handle = { '\0' };
+
+#define I2C_BASE 		I2C2
+
+I2C_Config_t stm32f407xx_i2c_config = {
+		.scl_speed 		= I2C_SPEED_SM,
+		.dev_addr 		= 0x62,
+		.ack_ctrl		= I2C_ACK_EN,
+		.fm_duty_cycle	= I2C_FM_DUTY_2
+};
+
+I2C_Handle_t stm32f407xx_i2c_handle = {
+		.p_i2c_x 		= I2C2,
+		.i2c_config 	= stm32f407xx_i2c_config,
+		.p_tx_buffer	= NULL,
+		.p_rx_buffer	= NULL,
+		.tx_len			= 0,
+		.rx_len			= 0,
+		.tx_rx_state	= I2C_STATE_TX,
+		.slave_addr		= 0,
+		.sr				= I2C_DISABLE_SR
+};
 
 void STM32F407XX_System_Clock_Config(void)
 {
-
 }
 
 void STM32F407XX_GPIO_Init(void)
@@ -42,12 +60,10 @@ void STM32F407XX_I2C_Init(void)
 	global_i2c_handle.sr = 0;
 }
 
-HAL_Driver stm32f407xx_hal_driver =
-{
+HAL_Driver stm32f407xx_hal_driver = {
 	.HAL_System_Clock_Config 	= STM32F407XX_System_Clock_Config,
 	.HAL_GPIO_Init 				= STM32F407XX_GPIO_Init,
 	.HAL_I2C_Init 				= STM32F407XX_I2C_Init,
 	.HAL_I2C_Write_IT 			= I2C_Master_Send_IT,
 	.HAL_I2C_Read_IT 			= I2C_Master_Receive_IT,
-	.HAL_I2C_Handle 			= STM32F407XX_I2C_Handle
 };

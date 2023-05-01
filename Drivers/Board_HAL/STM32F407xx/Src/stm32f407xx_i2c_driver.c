@@ -1,17 +1,11 @@
-/*
- * stm32f407xx_i2c_driver.c
- *
- *  Created on: Jan 27, 2023
- *      Author: Michael
- */
+#include <stdio.h>
 
+#include "globals.h"
 #include "stm32f407xx_i2c_driver.h"
 #include "stm32f407xx_rcc_driver.h"
 #include "ds3231_rtc_driver.h"
 #include "stm32f407xx_gpio_driver.h"
-#include <stdio.h>
-
-#include "globals.h"
+#include "hal_driver.h"
 
 /*************** PRIVATE UTILITY FUNCTION DECLARATIONS*****************/
 static void I2C_Ack_Control(I2C_Register_Map_t *p_i2c_x, uint8_t enable);
@@ -24,13 +18,12 @@ static void I2C_Set_Own_Address(I2C_Handle_t *p_i2c_handle);
 void I2C2_EV_IRQHandler(void)
 {
 	// bottom byte of the SR1 register indicate which event we are handling
-	uint8_t event_to_handle = (global_i2c_handle.p_i2c_x->SR1 & 0xFF );
-	uint8_t tx_rx_state = global_i2c_handle.task_queue[global_i2c_handle.current_task].tx_or_rx;
+	uint8_t event_to_handle = (stm32f407xx_i2c_handle.p_i2c_x->SR1) & 0xFF;
 
 	// Handle EV5 - SB is set
-	if (GET_BIT(&global_i2c_handle.p_i2c_x->SR1, I2C_SR1_SB_MASK))
+	if (GET_BIT(&stm32f407xx_i2c_handle.p_i2c_x->SR1, I2C_SR1_SB_MASK))
 	{
-		I2C_Handle_SB(tx_rx_state);
+		I2C_Handle_SB();
 		return;
 	}
 	// Handle EV6 - ADDR is set
@@ -51,6 +44,30 @@ void I2C2_EV_IRQHandler(void)
 	{
 		I2C_Handle_RXNE();
 		return;
+	}
+}
+
+void I2C_Handle_SB(uint8_t tx_rx_state)
+{
+	I2C_Write_Address_Byte(&stm32f407xx_i2c_handle, stm32f407xx_i2c_handle.slave_addr, stm32f407xx_i2c_handle.tx_rx_state);
+}
+
+void I2C_Handle_ADDR(void)
+{
+	if (stm32f407xx_i2c_handle.tx_rx_state == I2C_STATE_TX)
+	{
+		I2C_Check_Status_Flag(&stm32f407xx_i2c_handle, I2C_SR2_TRA, I2C_SR2_CHECK);
+	}
+	else // I2C peripheral is in master receiver
+	{
+		if (stm32f407xx_i2c_handle.len == 1)
+		{
+			// ACKing must be disabled on peripheral before last byte
+			I2C_Ack_Control(stm32f407xx_i2c_handle->p_i2c_x, DISABLE);
+			I2C_Generate_Stop_Condition(p_i2c_handle);
+		}
+		// clear ADDR flag by reading SR2
+		I2C_Check_Status_Flag(&stm32f407xx_i2c_handle, I2C_SR2_TRA, I2C_SR2_CHECK);
 	}
 }
 
@@ -127,90 +144,50 @@ void I2C_Peripheral_Power_Switch(I2C_Register_Map_t *p_i2c_x, uint8_t on_or_off)
 
 void I2C_Master_Send_IT(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr)
 {
-	// create new task
-	//I2C_Task_t new_task = { p_tx_buffer, len, slave_addr, sr, I2C_STATE_TX };
+	stm32f407xx_i2c_handle.p_tx_buffer = p_tx_buffer;
+	stm32f407xx_i2c_handle.tx_len = len;
+	stm32f407xx_i2c_handle.slave_addr = slave_addr;
+	stm32f407xx_i2c_handle.sr = sr;
 
-	// add new task to global handler queue
-	//global_i2c_handle[global_i2c_handle.num_tasks + 1] = new_task;
-
-	/*// reset TX buffer
-	global_i2c_handle.p_tx_buffer = tx_buffer;
-	// load global TX buffer with data at client TX buffer
-	for (int i = 0; i < len; i++)
-	{
-		tx_buffer[i] = p_tx_buffer[i];
-	}
-	global_i2c_handle.slave_addr = slave_addr;
-	global_i2c_handle.tx_rx_state = I2C_STATE_TX;
-	global_i2c_handle.tx_len = len;
-	global_i2c_handle.sr = sr;*/
 	I2C_Generate_Start_Condition(&global_i2c_handle);
 }
 
 I2C_Master_Receive_IT(uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr)
 {
-	printf("Got here!\n");
 	I2C_Generate_Start_Condition(&global_i2c_handle);
-}
-
-void I2C_Handle_SB(uint8_t tx_rx_state)
-{
-	// just need to set the DR equal to the slave address
-	// needs to feed in I2C_WRITE for transmit, I2C_READ for receive
-	I2C_Write_Address_Byte(&global_i2c_handle);
-}
-
-void I2C_Handle_ADDR(void)
-{
-	if (curr_task.tx_or_rx == I2C_STATE_TX)
-	{
-		I2C_Check_Status_Flag(&global_i2c_handle, I2C_SR2_TRA, I2C_SR2_CHECK);
-	}
-	else
-	{
-		if (curr_task.len == 1)
-		{
-			// NACK must be sent on first byte
-			I2C_Ack_Control(p_i2c_handle->p_i2c_x, DISABLE);
-			I2C_Generate_Stop_Condition(p_i2c_handle);
-		}
-		// clear ADDR flag by reading SR2
-		I2C_Check_Status_Flag(&global_i2c_handle, I2C_SR2_TRA, I2C_SR2_CHECK);
-	}
 }
 
 void I2C_Handle_TXE(void)
 {
-	uint8_t curr_task = global_i2c_handle.current_task;
-
-	if (global_i2c_handle.task_queue[curr_task].len <= 0)
+	if (stm32f407xx_i2c_handle.tx_len <= 0)
 	{
-		// if btf isn't set, transmission isn't done, wait for btf before stop
-		if (!I2C_Check_Status_Flag(&global_i2c_handle, I2C_SR1_BTF, I2C_SR1_CHECK))
+		// if BTF isn't set, transmission isn't done, wait for BTF before stop
+		if (!I2C_Check_Status_Flag(&stm32f407xx_i2c_handle, I2C_SR1_BTF, I2C_SR1_CHECK))
 		{
-			// disable buffer interrupts until BTF
-			CLEAR_BIT(&global_i2c_handle.p_i2c_x->CR2, I2C_CR2_ITBUFEN_MASK);
+			// disable buffer interrupts until BTF, since TXE will trigger repeatedly
+			CLEAR_BIT(&stm32f407xx_i2c_handle.p_i2c_x->CR2, I2C_CR2_ITBUFEN_MASK);
 			return;
 		}
 		// depending on handle SR field, either generate stop condition or repeated start
-		/*if (global_i2c_handle.sr == I2C_ENABLE_SR)
-			I2C_Generate_Start_Condition(&global_i2c_handle);
+		if (global_i2c_handle.sr == I2C_ENABLE_SR)
+		{
+			I2C_Generate_Start_Condition(&stm32f407xx_i2c_handle);
+		}
 		else
-			I2C_Generate_Stop_Condition(&global_i2c_handle);*/
+		{
+			I2C_Generate_Stop_Condition(&stm32f407xx_i2c_handle);
+		}
+
+		// re-enable buffer interrupts, since we disabled TXE earlier
 		SET_BIT(&global_i2c_handle.p_i2c_x->CR2, I2C_CR2_ITBUFEN_MASK);
-		// task is finished, call callback to run next task or end process
-		DS3231_I2C_Transfer_Complete_Callback();
+		// transmit complete, call application callback
+		I2C_Transfer_Complete_Callback();
 	}
 
-	/*// DR is empty, shift register may or may not be empty. Either way, write next byte into DR
-	global_i2c_handle.p_i2c_x->DR = *global_i2c_handle.p_tx_buffer;
-	global_i2c_handle.p_tx_buffer++;
-	global_i2c_handle.tx_len--;*/
-
-	global_i2c_handle.p_i2c_x->DR = *(global_i2c_handle.task_queue[curr_task].p_buffer);
-	global_i2c_handle.task_queue[curr_task].p_buffer++;
-	tx_buffer_pos++;
-	global_i2c_handle.task_queue[curr_task].len--;
+	// DR is empty, shift register may or may not be empty. Either way, write next byte into DR
+	stm32f407xx_i2c_handle.p_i2c_x->DR = *stm32f407xx_i2c_handle.p_tx_buffer;
+	stm32f407xx_i2c_handle.p_tx_buffer++;
+	stm32f407xx_i2c_handle.tx_len--;
 }
 
 void I2C_Handle_RXNE(void)

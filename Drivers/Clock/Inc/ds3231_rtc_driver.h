@@ -66,20 +66,21 @@ typedef enum
 void DS3231_Initialize(void);
 
 // Functions which retrieve data from the DS3231 clock module
-seconds_t DS3231_Get_Seconds_IT();
-seconds_t DS3231_Get_Seconds(I2C_Handle_t *p_i2c_handle);
-minutes_t DS3231_Get_Minutes(I2C_Handle_t *p_i2c_handle);
-hours_t DS3231_Get_Hours(I2C_Handle_t *p_i2c_handle);
-day_of_week_t DS3231_Get_Day_Of_Week(I2C_Handle_t *p_i2c_handle);
-date_t DS3231_Get_Date(I2C_Handle_t *p_i2c_handle);
-month_t DS3231_Get_Month(I2C_Handle_t *p_i2c_handle);
-uint8_t DS3231_Get_Century(I2C_Handle_t *p_i2c_handle);
-DS3231_Month_Century_t DS3231_Get_Month_Century(I2C_Handle_t *p_i2c_handle);
-year_t DS3231_Get_Year(I2C_Handle_t *p_i2c_handle);
-full_date_t DS3231_Get_Full_Date(I2C_Handle_t *p_i2c_handle);
-full_time_t DS3231_Get_Full_Time(I2C_Handle_t *p_i2c_handle);
-full_datetime_t DS3231_Get_Full_Datetime(I2C_Handle_t *p_i2c_handle);
-float DS3231_Get_Temp(I2C_Handle_t *p_i2c_handle);
+seconds_t DS3231_Get_Seconds(void);
+minutes_t DS3231_Get_Minutes(void);
+hours_t DS3231_Get_Hours(void);
+day_of_week_t DS3231_Get_Day_Of_Week(void);
+date_t DS3231_Get_Date(void);
+month_t DS3231_Get_Month(void);
+/*
+uint8_t DS3231_Get_Century(void);
+DS3231_Month_Century_t DS3231_Get_Month_Century(void);
+*/
+year_t DS3231_Get_Year(void);
+full_date_t DS3231_Get_Full_Date(void);
+full_time_t DS3231_Get_Full_Time(void);
+full_datetime_t DS3231_Get_Full_Datetime(void);
+float DS3231_Get_Temp(void);
 
 // Functions which set data in the DS3231 clock module
 void DS3231_Convert_Hour_Format(I2C_Handle_t *p_i2c_handle, DS3231_12_24_Hour_t hour_mode);

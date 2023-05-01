@@ -45,9 +45,14 @@ uint8_t i2c_tx_buffer[255];
 uint8_t i2c_tx_buffer_pos = 0;
 uint8_t i2c_rx_buffer_pos = 0;
 
-void I2C_Transfer_Complete_Callback()
+void I2C_Transfer_Complete_Callback(I2C_Handle_t *p_i2c_handle)
 {
-	DS3231_I2C_Transfer_Complete_Callback();
+	DS3231_I2C_Transfer_Complete_Callback(p_i2c_handle);
+}
+
+void I2C_Receive_Complete_Callback(I2C_Handle_t *p_i2c_handle)
+{
+	DS3231_I2C_Receive_Complete_Callback(p_i2c_handle);
 }
 
 void DS3231_Initialize(void)
@@ -64,20 +69,40 @@ static void Read_From_DS3231_IT(I2C_Interface_t *i2c_interface, uint8_t len)
 	i2c_interface->I2C_Write_IT(i2c_tx_buffer, 1, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
 }
 
-void DS3231_I2C_Transfer_Complete_Callback(void)
+void DS3231_I2C_Receive_Complete_Callback(void)
+{
+
+}
+
+void DS3231_I2C_Transfer_Complete_Callback(I2C_Handle_t *p_i2c_handle)
 {
 	switch (ds3231_state)
 	{
 	case S3231_STATE_WRITING_POINTER_FOR_WRITE:
 		// finished writing pointer, ready to write data now!
 		ds3231_state = DS3231_STATE_WRITING_DATA;
-		app_hal_driver->HAL_I2C_Write_IT(i2c_tx_buffer, len, DS3231_SLAVE_ADDR, I2C_ENABLE_SR);
+		app_hal_driver->HAL_I2C_Write_IT(i2c_tx_buffer, p_i2c_handle->tx_len, p_i2c_handle->slave_addr, p_i2c_handle->sr);
+		break;
 	case DS3231_STATE_WRITE_POINTER_FOR_READ:
 		// finished writing pointer, ready to read data now!
 		ds3231_state = DS3231_STATE_READING_DATA;
 		app_hal_driver->HAL_I2C_Read_IT(i2c_rx_buffer, len, DS3231_SLAVE_ADDR, I2C_ENABLE_SR);
 		break;
-	case DS3231_STATE_READING_DATA | DS3231_STATE_WRITING_DATA:
+	case DS3231_STATE_WRITING_DATA:
+		// completed transaction, setting state to idle!
+		ds3231_state = DS3231_STATE_IDLE;
+		break;
+	default:
+		// state is not valid, returning an error status
+		return -1;
+	}
+}
+
+void I2C_Receive_Complete_Callback(I2C_Handle_t *p_i2c_handle)
+{
+	switch (ds3231_state)
+	{
+	case DS3231_STATE_READING_DATA:
 		// completed transaction, setting state to idle!
 		ds3231_state = DS3231_STATE_IDLE;
 		break;

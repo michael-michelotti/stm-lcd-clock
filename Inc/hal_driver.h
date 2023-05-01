@@ -8,12 +8,12 @@ typedef struct
     void (*I2C_Read_IT)(void);
 } I2C_Interface_t;
 
-I2C_Interface_t HAL_Get_I2C_Interface(void)
+I2C_Interface_t HAL_Get_I2C_Interface(HAL_Driver *driver)
 {
 	I2C_Interface_t i2c_interface;
-	i2c_interface.I2C_Init = HAL_I2C_Init;
-	i2c_interface.I2C_Write_IT = HAL_I2C_Write_IT;
-	i2c_interface.I2C_Read_IT = HAL_I2C_Read_IT;
+	i2c_interface.I2C_Init = driver->HAL_I2C_Init;
+	i2c_interface.I2C_Write_IT = driver->HAL_I2C_Write_IT;
+	i2c_interface.I2C_Read_IT = driver->HAL_I2C_Read_IT;
 	return i2c_interface;
 }
 

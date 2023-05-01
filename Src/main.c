@@ -30,14 +30,13 @@
   #warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
 #endif
 
+HAL_Driver app_hal_driver = stm32f407xx_hal_driver;
+
 // DEFINE the global state variables which were initially DECLARED in globals.h
 // Any of the global state variables can be accessed from separate modules by including globals.h
 // Display strings for LCD (maximum size of 16 bytes), initiated with all null characters
 char global_time_str[16] = { '\0' };
 char global_date_str[16] = { '\0' };
-
-I2C_Handle_t global_i2c_handle = { '\0' };
-GPIO_Handle_t global_gpio_handle = { '\0' };
 
 uint8_t rx_buffer[255];
 uint8_t tx_buffer[255];
@@ -51,42 +50,12 @@ void init_global_state()
 	char *default_date = "00/00/0000";
 	strncpy(global_time_str, default_time, strlen(default_time));
 	strncpy(global_date_str, default_date, strlen(default_date));
-
-	I2C_Config_t init_config = { I2C_SPEED_SM, 0x62, 1, I2C_FM_DUTY_2 };
-	global_i2c_handle.p_i2c_x = I2C2;
-	global_i2c_handle.i2c_config = init_config;
-	global_i2c_handle.p_tx_buffer = tx_buffer;
-	global_i2c_handle.p_rx_buffer = rx_buffer;
-	global_i2c_handle.tx_len = 0;
-	global_i2c_handle.rx_len = 0;
-	global_i2c_handle.tx_rx_state = 0;
-	global_i2c_handle.slave_addr = DS3231_SLAVE_ADDR;
-	global_i2c_handle.rx_size = 0;
-	global_i2c_handle.sr = 0;
-
-
-
-	GPIO_Pin_Config_t toggle = { 0, GPIO_MODE_OUT, GPIO_SPEED_HIGH, GPIO_PUPD_NONE, GPIO_OUT_PP, 0 };
-	global_gpio_handle.gpio_pin_config = toggle;
-	global_gpio_handle.p_gpio_x = GPIOE;
-	GPIO_Init(&global_gpio_handle);
 }
 
 int main(void)
 {
 	// initialize global state variables
 	init_global_state();
-
-	// PB10 = SCL, PB11 = SDA
-	GPIO_Pin_Config_t pb10 = { 10, GPIO_MODE_ALT, GPIO_SPEED_HIGH, GPIO_PUPD_NONE, GPIO_OUT_OD, 4 };
-	GPIO_Handle_t scl_handle = { GPIOB, pb10 };
-	GPIO_Init(&scl_handle);
-
-	GPIO_Pin_Config_t pb11 = { 11, GPIO_MODE_ALT, GPIO_SPEED_HIGH, GPIO_PUPD_NONE, GPIO_OUT_OD, 4 };
-	GPIO_Handle_t sda_handle = { GPIOB, pb11 };
-	GPIO_Init(&sda_handle);
-
-
 
 	I2C_Init(&global_i2c_handle, I2C_IT_EN);
 	//DS3231_Set_Seconds(&global_i2c_handle, 35, DS3231_BLOCKING_CALL);
@@ -121,6 +90,13 @@ int main(void)
 	}
 }
 
+void Board_Init(void)
+{
+	app_hal_driver.HAL_System_Clock_Config();
+	app_hal_driver.HAL_GPIO_Init();
+	app_hal_driver.HAL_I2C_Init();
+}
+
 void I2C2_EV_IRQHandler(void)
 {
 	// bottom byte of the SR1 register indicate which event we are handling
@@ -147,6 +123,4 @@ void I2C2_EV_IRQHandler(void)
 		I2C_Handle_TXE();
 		return;
 	}
-
-
 }

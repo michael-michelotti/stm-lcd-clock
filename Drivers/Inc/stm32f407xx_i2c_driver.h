@@ -20,6 +20,15 @@ typedef struct
 
 typedef struct
 {
+	uint8_t				*p_buffer;
+	uint32_t			len;
+	uint8_t				slave_addr;
+	uint8_t				sr;
+	uint8_t				tx_or_rx;
+} I2C_Task_t;
+
+typedef struct
+{
 	I2C_Register_Map_t	*p_i2c_x;
 	I2C_Config_t		i2c_config;
 	uint8_t 			*p_tx_buffer; 	// Pointer to data being transmitted
@@ -30,7 +39,25 @@ typedef struct
 	uint8_t 			slave_addr;		// Slave device address
     uint32_t        	rx_size;		//
     uint8_t         	sr;				// Repeated start value
+    I2C_Task_t			task_queue[8];	// Queue of I2C tasks so I2C callback knows what next I2C task is
+    uint8_t				current_task;
+    uint8_t				num_tasks;
 } I2C_Handle_t;
+
+typedef enum
+{
+	I2C_DISABLE_SR,
+	I2C_ENABLE_SR
+} Repeated_Start_Enable_t;
+
+typedef enum
+{
+	SYS_CLK_HSI,
+	SYS_CLK_HSE,
+	SYS_CLK_PLL,
+	SYS_CLK_NA
+} System_Clock_t;
+
 
 // Clock speed options
 #define I2C_SPEED_SM				100000		// 100kHz clock for standard mode
@@ -39,6 +66,9 @@ typedef struct
 // Enable or disable acknowledge bit after data bit
 #define I2C_ACK_EN        			1
 #define I2C_ACK_DI			    	0
+
+#define I2C_IT_DI					0
+#define I2C_IT_EN					1
 
 #define I2C1_EV_NVIC_POS			31
 #define I2C1_ER_NVIC_POS			32
@@ -194,22 +224,8 @@ typedef enum
 #define I2C_FLAG_ADDR 				(1 << I2C_SR1_ADDR)
 #define I2C_FLAG_TIMEOUT 			(1 << I2C_SR1_TIMEOUT)
 
-typedef enum
-{
-	I2C_DISABLE_SR,
-	I2C_ENABLE_SR
-} Repeated_Start_Enable_t;
-
-typedef enum
-{
-	SYS_CLK_HSI,
-	SYS_CLK_HSE,
-	SYS_CLK_PLL,
-	SYS_CLK_NA
-} System_Clock_t;
-
 void I2C_Peri_Clk_Ctrl(I2C_Register_Map_t *p_i2c_x, uint8_t enable);
-void I2C_Init(I2C_Handle_t *p_i2c_handle);
+void I2C_Init(I2C_Handle_t *p_i2c_handle, uint8_t enable_interrupt);
 void I2C_Peripheral_Power_Switch(I2C_Register_Map_t *p_i2c_x, uint8_t on_or_off);
 void I2C_Master_Send(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr,uint8_t sr);
 void I2C_Master_Send_IT(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr);
@@ -219,10 +235,10 @@ void I2C_Generate_Start_Condition(I2C_Handle_t *p_i2c_handle);
 void I2C_Generate_Stop_Condition(I2C_Handle_t *p_i2c_handle);
 
 void I2C_Handle_SB(uint8_t tx_rx_state);
-void I2C_Handle_ADDR_TX(void);
-void I2C_Handle_ADDR_RX(uint8_t rx_len);
+void I2C_Handle_ADDR(void);
 void I2C_Handle_TXE(void);
 void I2C_Handle_RXNE(void);
+void I2C_Interrupt_Callback();
 
 void I2C_Enable_Interrupts();
 void I2C_Set_Interrupt_Priority(I2C_Handle_t *p_i2c_handle, uint8_t priority);

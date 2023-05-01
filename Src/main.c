@@ -16,11 +16,10 @@
  ******************************************************************************
  */
 
+#include "string.h"
 #include <stdint.h>
 #include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "stdio.h"
 
 #include "globals.h"
 #include "stm32f407xx.h"
@@ -38,9 +37,12 @@ char global_time_str[16] = { '\0' };
 char global_date_str[16] = { '\0' };
 
 I2C_Handle_t global_i2c_handle = { '\0' };
+GPIO_Handle_t global_gpio_handle = { '\0' };
 
-uint8_t rx_buffer[256];
-uint8_t tx_buffer[256];
+uint8_t rx_buffer[255];
+uint8_t tx_buffer[255];
+uint8_t tx_buffer_pos = 0;
+uint8_t rx_buffer_pos = 0;
 
 void init_global_state()
 {
@@ -61,6 +63,13 @@ void init_global_state()
 	global_i2c_handle.slave_addr = DS3231_SLAVE_ADDR;
 	global_i2c_handle.rx_size = 0;
 	global_i2c_handle.sr = 0;
+
+
+
+	GPIO_Pin_Config_t toggle = { 0, GPIO_MODE_OUT, GPIO_SPEED_HIGH, GPIO_PUPD_NONE, GPIO_OUT_PP, 0 };
+	global_gpio_handle.gpio_pin_config = toggle;
+	global_gpio_handle.p_gpio_x = GPIOE;
+	GPIO_Init(&global_gpio_handle);
 }
 
 int main(void)
@@ -77,12 +86,11 @@ int main(void)
 	GPIO_Handle_t sda_handle = { GPIOB, pb11 };
 	GPIO_Init(&sda_handle);
 
-	GPIO_Pin_Config_t toggle = { 0, GPIO_MODE_OUT, GPIO_SPEED_HIGH, GPIO_PUPD_NONE, GPIO_OUT_PP, 0 };
-	GPIO_Handle_t tog_handle = { GPIOE, toggle };
-	GPIO_Init(&tog_handle);
 
-	I2C_Init(&global_i2c_handle);
-	DS3231_Set_Seconds(&global_i2c_handle, 35);
+
+	I2C_Init(&global_i2c_handle, I2C_IT_EN);
+	//DS3231_Set_Seconds(&global_i2c_handle, 35, DS3231_BLOCKING_CALL);
+	uint8_t secs = DS3231_Get_Seconds(&global_i2c_handle);
 
 	/*
 	// configure I2C SDA and SCL pins
@@ -92,7 +100,7 @@ int main(void)
 
 	DS3231_Hours_t hrs = { DS3231_12_HOUR, DS3231_PM, 9 };
 	DS3231_Time_t time = { 0, 47, hrs };
-	DS3231_Full_Date_t date = { DS3231_THU, 9, 2, 23 };
+
 	DS3231_Datetime_t dt = { time, date };
 	// DS3231_Set_Full_Datetime(&i2c2_handle, dt);
 	DS3231_Datetime_t datetime = DS3231_Get_Full_Datetime(&i2c2_handle);
@@ -108,6 +116,8 @@ int main(void)
 
 	for(;;)
 	{
+		//GPIO_Write_To_Output_Pin(global_gpio_handle.p_gpio_x, global_gpio_handle.gpio_pin_config.gpio_pin_num, HIGH);
+		//GPIO_Write_To_Output_Pin(global_gpio_handle.p_gpio_x, global_gpio_handle.gpio_pin_config.gpio_pin_num, LOW);
 	}
 }
 
@@ -115,7 +125,7 @@ void I2C2_EV_IRQHandler(void)
 {
 	// bottom byte of the SR1 register indicate which event we are handling
 	uint8_t event_to_handle = (global_i2c_handle.p_i2c_x->SR1 & 0xFF );
-	uint8_t tx_rx_state = global_i2c_handle.tx_rx_state;
+	uint8_t tx_rx_state = global_i2c_handle.task_queue[global_i2c_handle.current_task].tx_or_rx;
 
 	// Handle EV5 - SB is set
 	if (GET_BIT(&global_i2c_handle.p_i2c_x->SR1, I2C_SR1_SB_MASK))
@@ -126,7 +136,7 @@ void I2C2_EV_IRQHandler(void)
 	// Handle EV6 - ADDR is set
 	else if (GET_BIT(&global_i2c_handle.p_i2c_x->SR1, I2C_SR1_ADDR_MASK))
 	{
-		I2C_Handle_ADDR_TX();
+		I2C_Handle_ADDR();
 		return;
 	}
 	// Handle EV8_1, EV8_2 and EV8 - both shift register and DR empty
@@ -137,5 +147,6 @@ void I2C2_EV_IRQHandler(void)
 		I2C_Handle_TXE();
 		return;
 	}
+
 
 }

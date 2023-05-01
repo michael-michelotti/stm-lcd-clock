@@ -36,26 +36,28 @@ static uint8_t *Convert_Full_Date_To_DS3231(DS3231_Full_Date_t full_date);
 static uint8_t *Convert_Dateime_To_DS3231(DS3231_Datetime_t datetime);
 
 /*************** GENERAL UTILITY FUNCTIONS *****************/
+static void Read_From_DS3231_IT(uint8_t *p_rx_buffer, uint8_t ds3231_addr, uint8_t len);
 static void Read_From_DS3231(I2C_Handle_t *p_i2c_handle, uint8_t *p_rx_buffer, uint8_t ds3231_addr, uint8_t len);
-static void Write_To_DS3231(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint8_t ds3231_addr, uint8_t len);
+static void Write_To_DS3231(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint8_t len);
 static void Write_To_DS3231_IT(uint8_t *p_tx_buffer, uint8_t len);
 static uint8_t Convert_Hours_12_24(uint8_t current_byte, DS3231_12_24_Hour_t new_mode);
 static uint8_t Convert_Binary_To_BCD(uint8_t binary_byte);
 static uint8_t Convert_BCD_To_Binary(uint8_t bcd_byte);
 
 /*************** CLOCK MODULE GETTER FUNCTIONS *****************/
-static void Read_From_DS3231_IT(uint8_t len)
+static void Read_From_DS3231_IT(uint8_t *p_rx_buffer, uint8_t ds3231_addr, uint8_t len)
 {
 	// Configure global I2C handle for transmission of 1 byte, start transmission
-	global_i2c_handle.slave_addr = DS3231_SLAVE_ADDR;
+	// has to add two tasks to the global I2C handle, then call send IT
+	tx_buffer[tx_buffer_pos] = ds3231_addr;
+	I2C_Task_t reg_write_task = { tx_buffer, 1, DS3231_SLAVE_ADDR, I2C_ENABLE_SR, I2C_STATE_TX };
+	I2C_Task_t data_read_task = { rx_buffer, len, DS3231_SLAVE_ADDR, I2C_DISABLE_SR, I2C_STATE_RX };
 
-	for (int i = 0; i < 100000; i++);
+	global_i2c_handle.current_task = 0;
+	global_i2c_handle.num_tasks = 2;
+	global_i2c_handle.task_queue[0] = reg_write_task;
+	global_i2c_handle.task_queue[1] = data_read_task;
 
-	// Configure I2C handle for reception, receive `len` bytes
-	global_i2c_handle.p_tx_buffer = rx_buffer;
-	global_i2c_handle.tx_rx_state = I2C_STATE_RX;
-	global_i2c_handle.rx_len = len;
-	global_i2c_handle.sr = I2C_DISABLE_SR;
 	I2C_Generate_Start_Condition(&global_i2c_handle);
 }
 
@@ -69,24 +71,18 @@ static void Read_From_DS3231(I2C_Handle_t *p_i2c_handle, uint8_t *p_rx_buffer, u
 static void Write_To_DS3231_IT(uint8_t *p_tx_buffer, uint8_t len)
 {
 	// do not need SR for a write command - will never be switching from write to read
-	I2C_Master_Send_IT(p_tx_buffer, len, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
+	I2C_Master_Send_IT(p_tx_buffer, len, DS3231_SLAVE_ADDR, I2C_ENABLE_SR);
 }
 
-static void Write_To_DS3231(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint8_t ds3231_addr, uint8_t len)
+static void Write_To_DS3231(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint8_t len)
 {
 	I2C_Master_Send(p_i2c_handle, p_tx_buffer, len, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
-}
-
-uint8_t DS3231_Get_Seconds_IT()
-{
-	Read_From_DS3231_IT(1);
-	return Convert_Seconds_From_DS3231(*global_i2c_handle.p_rx_buffer);
 }
 
 uint8_t DS3231_Get_Seconds(I2C_Handle_t *p_i2c_handle)
 {
 	uint8_t p_rx_buffer[1];
-	Read_From_DS3231(p_i2c_handle, p_rx_buffer, DS3231_SECONDS, 1);
+	Read_From_DS3231_IT(p_rx_buffer, DS3231_SECONDS, 1);
 	return Convert_Seconds_From_DS3231(*p_rx_buffer);
 }
 
@@ -192,54 +188,59 @@ float DS3231_Get_Temp(I2C_Handle_t *p_i2c_handle)
 /***************************************************************/
 /***************************************************************/
 
-void DS3231_Set_Seconds(I2C_Handle_t *p_i2c_handle, uint8_t seconds)
+void DS3231_Set_Seconds(I2C_Handle_t *p_i2c_handle, uint8_t seconds, uint8_t blocking)
 {
-	// handle, tx buffer, secs, len
 	uint8_t p_tx_buffer[2] = { DS3231_SECONDS, Convert_Seconds_To_DS3231(seconds) };
-	Write_To_DS3231_IT(p_tx_buffer, 2);
+	if (blocking == DS3231_BLOCKING_CALL)
+		Write_To_DS3231(p_i2c_handle, p_tx_buffer, 2);
+	else
+		Write_To_DS3231_IT(p_tx_buffer, 2);
 }
 
 void DS3231_Set_Minutes(I2C_Handle_t *p_i2c_handle, uint8_t minutes)
 {
 	uint8_t p_tx_buffer[2] = { DS3231_MINUTES, Convert_Minutes_To_DS3231(minutes) };
-	Write_To_DS3231(p_i2c_handle, p_tx_buffer, DS3231_SECONDS, 2);
+	Write_To_DS3231(p_i2c_handle, p_tx_buffer, 2);
 }
 
 void DS3231_Set_Hours(I2C_Handle_t *p_i2c_handle, DS3231_Hours_t hours)
 {
 	uint8_t p_tx_buffer[2] = { DS3231_HOURS, Convert_Hours_To_DS3231(hours) };
-	Write_To_DS3231(p_i2c_handle, p_tx_buffer, DS3231_SECONDS, 2);
+	Write_To_DS3231(p_i2c_handle, p_tx_buffer, 2);
 }
 
 void DS3231_Set_Day(I2C_Handle_t *p_i2c_handle, DS3231_Day_t day)
 {
 	uint8_t p_tx_buffer[2] = { DS3231_DAY, Convert_Day_To_DS3231(day) };
-	Write_To_DS3231(p_i2c_handle, p_tx_buffer, DS3231_SECONDS, 2);
+	Write_To_DS3231(p_i2c_handle, p_tx_buffer, 2);
 }
 
 void DS3231_Set_Date(I2C_Handle_t *p_i2c_handle, uint8_t date)
 {
 	uint8_t p_tx_buffer[2] = { DS3231_DATE, Convert_Date_To_DS3231(date) };
-	Write_To_DS3231(p_i2c_handle, p_tx_buffer, DS3231_SECONDS, 2);
+	Write_To_DS3231(p_i2c_handle, p_tx_buffer, 2);
 }
 
 void DS3231_Set_Month(I2C_Handle_t *p_i2c_handle, uint8_t month)
 {
 	uint8_t p_tx_buffer[2] = { DS3231_MONTH_CENTURY, Convert_Month_To_DS3231(month) };
-	Write_To_DS3231(p_i2c_handle, p_tx_buffer, DS3231_SECONDS, 2);
+	Write_To_DS3231(p_i2c_handle, p_tx_buffer, 2);
 }
 
 void DS3231_Set_Year(I2C_Handle_t *p_i2c_handle, uint8_t year)
 {
 	uint8_t p_tx_buffer[2] = { DS3231_YEAR, Convert_Year_To_DS3231(year) };
-	Write_To_DS3231(p_i2c_handle, p_tx_buffer, DS3231_SECONDS, 2);
+	Write_To_DS3231(p_i2c_handle, p_tx_buffer, 2);
 }
 
-void DS3231_Set_Full_Date(I2C_Handle_t *p_i2c_handle, DS3231_Full_Date_t full_date)
+void DS3231_Set_Full_Date(I2C_Handle_t *p_i2c_handle, DS3231_Full_Date_t full_date, uint8_t blocking)
 {
 	uint8_t *date_bytes = Convert_Full_Date_To_DS3231(full_date);
 	date_bytes[0] = DS3231_DAY;
-	Write_To_DS3231(p_i2c_handle, date_bytes, DS3231_SECONDS, FULL_DATE_LEN+1);
+	if (blocking == DS3231_BLOCKING_CALL)
+		Write_To_DS3231(p_i2c_handle, date_bytes, FULL_DATE_LEN+1);
+	else
+		Write_To_DS3231_IT(date_bytes, FULL_DATE_LEN+1);
 	free(date_bytes);
 }
 
@@ -247,7 +248,7 @@ void DS3231_Set_Full_Time(I2C_Handle_t *p_i2c_handle, DS3231_Time_t full_time)
 {
 	uint8_t *time_bytes = Convert_Time_To_DS3231(full_time);
 	time_bytes[0] = DS3231_SECONDS;
-	Write_To_DS3231(p_i2c_handle, time_bytes, DS3231_SECONDS, FULL_TIME_LEN+1);
+	Write_To_DS3231(p_i2c_handle, time_bytes, FULL_TIME_LEN+1);
 	free(time_bytes);
 }
 
@@ -255,7 +256,7 @@ void DS3231_Set_Full_Datetime(I2C_Handle_t *p_i2c_handle, DS3231_Datetime_t date
 {
 	uint8_t *datetime_bytes = Convert_Dateime_To_DS3231(datetime);
 	datetime_bytes[0] = DS3231_SECONDS;
-	Write_To_DS3231(p_i2c_handle, datetime_bytes, DS3231_SECONDS, FULL_DATETIME_LEN+1);
+	Write_To_DS3231(p_i2c_handle, datetime_bytes, FULL_DATETIME_LEN+1);
 	free(datetime_bytes);
 }
 

@@ -15,8 +15,11 @@ extern char global_time_str[16];
 extern char global_date_str[16];
 
 extern I2C_Handle_t global_i2c_handle;
+extern GPIO_Handle_t global_gpio_handle;
 
-extern uint8_t rx_buffer[256];
-extern uint8_t tx_buffer[256];
+extern uint8_t rx_buffer[255];
+extern uint8_t tx_buffer[255];
+extern uint8_t tx_buffer_pos;
+extern uint8_t rx_buffer_pos;
 
 #endif /* GLOBALS_H_ */

@@ -1,15 +1,8 @@
-/*
- * stm32f407xx_gpio_driver.h
- *
- *  Created on: Jan 28, 2023
- *      Author: Michael
- */
-
 #ifndef INC_STM32F407XX_GPIO_DRIVER_H_
 #define INC_STM32F407XX_GPIO_DRIVER_H_
 
 #include "stm32f407xx.h"
-#include "stdint.h"
+#include <stdint.h>
 
 typedef struct
 {

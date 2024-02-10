@@ -25,6 +25,14 @@ typedef struct
     uint8_t         	sr;				// Repeated start value
 } I2C_Handle_t;
 
+typedef struct
+{
+	void			(*Initialize)();
+	void 			(*Read_Bytes)(uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr, uint8_t repeat_start);
+	void	 		(*Write_Bytes)(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t repeat_start);
+	void	 		(*Deinitialize)(I2C_Handle_t *p_i2c_x);
+} I2C_Interface_t;
+
 typedef enum
 {
 	I2C_DISABLE_SR,
@@ -204,27 +212,30 @@ typedef enum
 #define I2C_FLAG_ADDR 				(1 << I2C_SR1_ADDR)
 #define I2C_FLAG_TIMEOUT 			(1 << I2C_SR1_TIMEOUT)
 
+I2C_Interface_t get_i2c_interface();
 void I2C_Peri_Clk_Ctrl(I2C_Register_Map_t *p_i2c_x, uint8_t enable);
-void I2C_Init(I2C_Handle_t *p_i2c_handle, uint8_t enable_interrupt);
+void I2C_Init();
 void I2C_Peripheral_Power_Switch(I2C_Register_Map_t *p_i2c_x, uint8_t on_or_off);
-void I2C_Master_Send(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr,uint8_t sr);
-void I2C_Master_Send_IT(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr);
-void I2C_Master_Receive(I2C_Handle_t *p_i2c_handle, uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr);
+void I2C_Master_Send(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t repeat_start);
+//void I2C_Master_Send(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr,uint8_t sr);
+//void I2C_Master_Send_IT(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr);
+void I2C_Master_Receive(uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr, uint8_t repeat_start);
+//void I2C_Master_Receive(I2C_Handle_t *p_i2c_handle, uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr);
+void I2C_Cleanup(I2C_Handle_t *p_i2c_x);
 
 void I2C_Generate_Start_Condition(I2C_Handle_t *p_i2c_handle);
 void I2C_Generate_Stop_Condition(I2C_Handle_t *p_i2c_handle);
 
-void I2C_Handle_SB(uint8_t tx_rx_state);
-void I2C_Handle_ADDR(void);
-void I2C_Handle_TXE(void);
-void I2C_Handle_RXNE(void);
-void I2C_Interrupt_Callback();
+//void I2C_Handle_SB(uint8_t tx_rx_state);
+//void I2C_Handle_ADDR(void);
+//void I2C_Handle_TXE(void);
+//void I2C_Handle_RXNE(void);
+//void I2C_Interrupt_Callback();
 
-void I2C_Enable_Interrupts();
-void I2C_Set_Interrupt_Priority(I2C_Handle_t *p_i2c_handle, uint8_t priority);
+//void I2C_Enable_Interrupts();
+//void I2C_Set_Interrupt_Priority(I2C_Handle_t *p_i2c_handle, uint8_t priority);
 uint8_t I2C_Check_Status_Flag(I2C_Handle_t *p_i2c_handle, uint8_t flag_num, uint8_t sr_1_or_2);
 void I2C_Write_Address_Byte(I2C_Handle_t *p_i2c_handle, uint8_t slave_addr, uint8_t read_or_write);
-/*
-void I2C_Cleanup(I2C_Register_t *p_i2c_x);
-*/
+
+
 #endif /* STM32F407XX_I2C_DRIVER_H_ */

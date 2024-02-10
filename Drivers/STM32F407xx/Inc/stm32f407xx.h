@@ -1,10 +1,3 @@
-/*
- * stm32f407xx.h
- *
- *  Created on: Jan 27, 2023
- *      Author: Michael
- */
-
 #ifndef STM32F407XX_H_
 #define STM32F407XX_H_
 

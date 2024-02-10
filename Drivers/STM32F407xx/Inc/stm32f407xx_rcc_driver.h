@@ -1,10 +1,3 @@
-/*
- * stm32f407xx_rcc_driver.h
- *
- *  Created on: Jan 27, 2023
- *      Author: Michael
- */
-
 #ifndef INC_STM32F407XX_RCC_DRIVER_H_
 #define INC_STM32F407XX_RCC_DRIVER_H_
 

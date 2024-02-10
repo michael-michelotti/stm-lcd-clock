@@ -1,14 +1,9 @@
-/*
- * lcd1602a_driver.c
- *
- *  Created on: Feb 4, 2023
- *      Author: Michael
- */
+#include "lcd1602a_display_driver.h"
 
 #include <stdlib.h>
 
-#include "lcd1602a_driver.h"
 #include "stm32f407xx.h"
+#include "stm32f407xx_gpio_driver.h"
 #include "globals.h"
 
 static char int_to_ascii_char(uint8_t int_to_covert);
@@ -27,8 +22,8 @@ static void set_ddram_addr(uint8_t ddram_addr);
 static void pulse_enable(uint32_t us_hold_time);
 static void mdelay(uint32_t cnt);
 static void udelay(uint32_t cnt);
-static char *convert_time_to_str(DS3231_Time_t time);
-static char *convert_date_to_str(DS3231_Full_Date_t date);
+static char *convert_time_to_str(full_time_t time);
+static char *convert_date_to_str(full_date_t date);
 
 // DEFINE the global state variables which were initially DECLARED in globals.h
 // Any of the global state variables can be accessed from separate modules by including globals.h
@@ -139,7 +134,7 @@ void LCD_Display_Char(char ch)
 	write_char(ch);
 }
 
-void LCD_Update_Time(DS3231_Time_t time)
+void LCD_Update_Time(full_time_t time)
 {
 	// set cursor to time position
 	LCD_Set_Cursor(DEFAULT_TIME_ROW, DEFAULT_TIME_COL);
@@ -148,7 +143,7 @@ void LCD_Update_Time(DS3231_Time_t time)
 	LCD_Display_Str(my_time_str);
 }
 
-void LCD_Update_Date(DS3231_Full_Date_t date)
+void LCD_Update_Date(full_date_t date)
 {
 	// set cursor to time position
 	LCD_Set_Cursor(DEFAULT_DATE_ROW, DEFAULT_DATE_COL);
@@ -157,7 +152,7 @@ void LCD_Update_Date(DS3231_Full_Date_t date)
 	LCD_Display_Str(my_date_str);
 }
 
-void LCD_Update_Date_And_Time(DS3231_Datetime_t datetime)
+void LCD_Update_Date_And_Time(full_datetime_t datetime)
 {
 	LCD_Update_Time(datetime.time);
 	LCD_Update_Date(datetime.date);
@@ -183,7 +178,7 @@ static void int_to_zero_padded_ascii(char *result, uint8_t int_to_convert)
 	}
 }
 
-static char *convert_date_to_str(DS3231_Full_Date_t date)
+static char *convert_date_to_str(full_date_t date)
 {
 	char result_buffer[2] = { '\0' };
 
@@ -206,7 +201,7 @@ static char *convert_date_to_str(DS3231_Full_Date_t date)
 	return global_date_str;
 }
 
-static char *convert_time_to_str(DS3231_Time_t time)
+static char *convert_time_to_str(full_time_t time)
 {
 	// format "HH:MM:SS AM"
 	// manipulates the global time string, declared in globa
@@ -227,14 +222,14 @@ static char *convert_time_to_str(DS3231_Time_t time)
 	global_time_str[6] = result_buffer[0];
 	global_time_str[7] = result_buffer[1];
 
-	if (time.hours.hour_12_24 == DS3231_12_HOUR)
+	if (time.hours.hour_format == HOUR_FORMAT_12_HOUR)
 	{
 		global_time_str[8] = ' ';
-		if (time.hours.am_pm == DS3231_AM)
+		if (time.hours.am_pm == AM_PM_AM)
 		{
 			global_time_str[9] = 'A';
 		}
-		else if (time.hours.am_pm == DS3231_PM)
+		else if (time.hours.am_pm == AM_PM_PM)
 		{
 			global_time_str[9] = 'P';
 		}

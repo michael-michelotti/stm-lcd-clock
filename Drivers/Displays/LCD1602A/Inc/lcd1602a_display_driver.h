@@ -1,14 +1,8 @@
-/*
- * lcd1602a_driver.h
- *
- *  Created on: Feb 4, 2023
- *      Author: Michael
- */
-
 #ifndef INC_LCD1602A_DRIVER_H_
 #define INC_LCD1602A_DRIVER_H_
 
-#include "stdint.h"
+#include <stdint.h>
+
 #include "ds3231_rtc_driver.h"
 
 #define LCD_GPIO_PORT		GPIOA
@@ -82,6 +76,7 @@ typedef enum
 #define IC_RW			8
 #define IC_RS			9
 
+void init_global_state();
 void LCD_Initialize();
 void LCD_Clear();
 void LCD_Set_Cursor(uint8_t row, uint8_t column);
@@ -91,9 +86,9 @@ void LCD_Power_Switch(uint8_t on_or_off);
 // void LCD_Backlight_Power_Switch(uint8_t on_or_off);
 void LCD_Update_Time_Format(char *fmt);
 void LCD_Update_Date_Format(char *fmt);
-void LCD_Update_Time(DS3231_Time_t time);
-void LCD_Update_Date(DS3231_Full_Date_t date);
-void LCD_Update_Date_And_Time(DS3231_Datetime_t datetime);
+void LCD_Update_Time(full_time_t time);
+void LCD_Update_Date(full_date_t date);
+void LCD_Update_Date_And_Time(full_datetime_t datetime);
 void LCD_Increment_Second();
 
 #endif /* INC_LCD1602A_DRIVER_H_ */

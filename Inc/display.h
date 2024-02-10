@@ -1,6 +1,7 @@
 #ifndef DISPLAY_H_
 #define DISPLAY_H_
 
+/*
 typedef struct
 {
 	void			(*Display_Initialize)(void);
@@ -10,5 +11,6 @@ typedef struct
 	void			(*Display_Clear)(void);
 	void			(*Display_Off)(void);
 } Display_Driver;
+*/
 
 #endif /* DISPLAY_H_ */

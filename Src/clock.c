@@ -1,5 +1,6 @@
 #include "clock.h"
 
+/*
 Clock_Driver ds3231_clock_driver =
 {
 	.Clock_Initialize			= DS3231_Initialize,
@@ -26,3 +27,4 @@ Clock_Driver ds3231_clock_driver =
 	.Clock_Set_Full_Time		= DS3231_Set_Full_Time,
 	.Clock_Set_Full_Datetime	= DS3231_Set_Full_Datetime
 };
+*/

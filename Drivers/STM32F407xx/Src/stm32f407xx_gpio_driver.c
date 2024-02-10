@@ -1,10 +1,3 @@
-/*
- * stm32f407xx_gpio_driver.c
- *
- *  Created on: Jan 28, 2023
- *      Author: Michael
- */
-
 #include "stm32f407xx_gpio_driver.h"
 
 /*************** PRIVATE UTILITY FUNCTION DECLARATIONS*****************/
@@ -76,18 +69,25 @@ void GPIO_Cleanup(GPIO_Register_Map_t *p_gpio_x)
 		break;
 	case GPIOB_BASE_ADDR:
 		GPIOB_RESET();
+		break;
 	case GPIOC_BASE_ADDR:
 		GPIOC_RESET();
+		break;
 	case GPIOD_BASE_ADDR:
 		GPIOD_RESET();
+		break;
 	case GPIOE_BASE_ADDR:
 		GPIOE_RESET();
+		break;
 	case GPIOF_BASE_ADDR:
 		GPIOF_RESET();
+		break;
 	case GPIOG_BASE_ADDR:
 		GPIOG_RESET();
+		break;
 	case GPIOH_BASE_ADDR:
 		GPIOH_RESET();
+		break;
 	case GPIOI_BASE_ADDR:
 		GPIOI_RESET();
 	}
@@ -104,18 +104,25 @@ void GPIO_Peri_Clk_Ctrl(GPIO_Register_Map_t *p_gpio_x, uint8_t enable)
 			break;
 		case GPIOB_BASE_ADDR:
 			GPIOB_PCLK_EN();
+			break;
 		case GPIOC_BASE_ADDR:
 			GPIOC_PCLK_EN();
+			break;
 		case GPIOD_BASE_ADDR:
 			GPIOD_PCLK_EN();
+			break;
 		case GPIOE_BASE_ADDR:
 			GPIOE_PCLK_EN();
+			break;
 		case GPIOF_BASE_ADDR:
 			GPIOF_PCLK_EN();
+			break;
 		case GPIOG_BASE_ADDR:
 			GPIOG_PCLK_EN();
+			break;
 		case GPIOH_BASE_ADDR:
 			GPIOH_PCLK_EN();
+			break;
 		case GPIOI_BASE_ADDR:
 			GPIOI_PCLK_EN();
 		}
@@ -129,18 +136,25 @@ void GPIO_Peri_Clk_Ctrl(GPIO_Register_Map_t *p_gpio_x, uint8_t enable)
 			break;
 		case GPIOB_BASE_ADDR:
 			GPIOB_PCLK_DI();
+			break;
 		case GPIOC_BASE_ADDR:
 			GPIOC_PCLK_DI();
+			break;
 		case GPIOD_BASE_ADDR:
 			GPIOD_PCLK_DI();
+			break;
 		case GPIOE_BASE_ADDR:
 			GPIOE_PCLK_DI();
+			break;
 		case GPIOF_BASE_ADDR:
 			GPIOF_PCLK_DI();
+			break;
 		case GPIOG_BASE_ADDR:
 			GPIOG_PCLK_DI();
+			break;
 		case GPIOH_BASE_ADDR:
 			GPIOH_PCLK_DI();
+			break;
 		case GPIOI_BASE_ADDR:
 			GPIOI_PCLK_DI();
 		}

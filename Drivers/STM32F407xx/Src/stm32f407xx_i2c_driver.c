@@ -3,11 +3,11 @@
 #include "globals.h"
 #include "stm32f407xx_i2c_driver.h"
 #include "stm32f407xx_rcc_driver.h"
-#include "ds3231_rtc_driver.h"
 #include "stm32f407xx_gpio_driver.h"
-#include "hal_driver.h"
+
 
 /*************** PRIVATE UTILITY FUNCTION DECLARATIONS*****************/
+static void I2C1_GPIO_Pin_Init();
 static void I2C_Ack_Control(I2C_Register_Map_t *p_i2c_x, uint8_t enable);
 static void I2C_Configure_Clock_Registers(I2C_Handle_t *p_i2c_handle);
 static void I2C_Set_CR2_Freq(I2C_Register_Map_t *p_i2c_x, uint32_t sys_clk_freq);
@@ -15,6 +15,23 @@ static void I2C_Set_CCR(I2C_Handle_t *p_i2c_handle, uint32_t sys_clk_freq);
 static void I2C_Configure_TRISE(I2C_Handle_t *p_i2c_handle, uint32_t sys_clk_freq);
 static void I2C_Set_Own_Address(I2C_Handle_t *p_i2c_handle);
 
+static I2C_Interface_t i2c_driver = {
+		.Initialize 		= I2C_Init,
+		.Write_Bytes 		= I2C_Master_Send,
+		.Read_Bytes 		= I2C_Master_Receive,
+		.Deinitialize 		= I2C_Cleanup,
+};
+
+I2C_Interface_t get_i2c_interface()
+{
+	return i2c_driver;
+}
+
+static I2C_Handle_t p_i2c_handle;
+static uint8_t p_tx_buffer[255];
+static uint8_t p_rx_buffer[255];
+
+/*
 void HAL_I2C2_EV_IRQHandler(I2C_Handle_t *p_i2c_handle)
 {
 	// bottom byte of the SR1 register indicate which event we are handling
@@ -46,13 +63,17 @@ void HAL_I2C2_EV_IRQHandler(I2C_Handle_t *p_i2c_handle)
 		return;
 	}
 }
+*/
 
-
+/*
 void I2C_Handle_SB(I2C_Handle_t *p_i2c_handle)
 {
 	I2C_Write_Address_Byte(p_i2c_handle, p_i2c_handle->slave_addr, p_i2c_handle->tx_rx_state);
 }
+*/
 
+
+/*
 void I2C_Handle_ADDR(I2C_Handle_t *p_i2c_handle)
 {
 	if (p_i2c_handle->tx_rx_state == I2C_STATE_TX)
@@ -71,6 +92,7 @@ void I2C_Handle_ADDR(I2C_Handle_t *p_i2c_handle)
 		I2C_Check_Status_Flag(p_i2c_handle, I2C_SR2_TRA, I2C_SR2_CHECK);
 	}
 }
+*/
 
 void I2C_Peri_Clk_Ctrl(I2C_Register_Map_t *p_i2c_x, uint8_t enable)
 {
@@ -106,10 +128,26 @@ void I2C_Peri_Clk_Ctrl(I2C_Register_Map_t *p_i2c_x, uint8_t enable)
 	}
 }
 
-void I2C_Init(I2C_Handle_t *p_i2c_handle, uint8_t enable_interrupt)
+void I2C_Init()
 {
-	I2C_Peri_Clk_Ctrl(p_i2c_handle->p_i2c_x, ENABLE);
+	I2C_Config_t my_i2c_config =
+	{
+			.scl_speed 		= I2C_SPEED_SM,
+			.dev_addr 		= 12,
+			.ack_ctrl		= I2C_ACK_EN,
+			.fm_duty_cycle 	= I2C_FM_DUTY_2
+	};
 
+	p_i2c_handle.i2c_config = my_i2c_config;
+	p_i2c_handle.p_i2c_x = I2C1;
+	p_i2c_handle.p_tx_buffer = p_tx_buffer;
+	p_i2c_handle.p_rx_buffer = p_rx_buffer;
+
+	I2C1_GPIO_Pin_Init();
+
+	I2C_Peri_Clk_Ctrl(p_i2c_handle.p_i2c_x, ENABLE);
+
+	/*
 	if (enable_interrupt)
 	{
 		I2C_Enable_Interrupts(p_i2c_handle);
@@ -117,32 +155,72 @@ void I2C_Init(I2C_Handle_t *p_i2c_handle, uint8_t enable_interrupt)
 		SET_BIT(&p_i2c_handle->p_i2c_x->CR2, I2C_CR2_ITEVTEN_MASK);
 		SET_BIT(&p_i2c_handle->p_i2c_x->CR2, I2C_CR2_ITBUFEN_MASK);
 	}
+	*/
 
 	// configure frequency and CCR
-	I2C_Configure_Clock_Registers(p_i2c_handle);
+	I2C_Configure_Clock_Registers(&p_i2c_handle);
 
 	// CR1 AND CR2 CONFIGURATION
-	I2C_Set_Own_Address(p_i2c_handle);
+	I2C_Set_Own_Address(&p_i2c_handle);
 
 	// Enable peripheral
-	I2C_Peripheral_Power_Switch(p_i2c_handle->p_i2c_x, ON);
+	I2C_Peripheral_Power_Switch(p_i2c_handle.p_i2c_x, ON);
 
 	// Ack bit must be set after peripheral is enabled
-	if (p_i2c_handle->i2c_config.ack_ctrl == I2C_ACK_EN)
+	if (p_i2c_handle.i2c_config.ack_ctrl == I2C_ACK_EN)
 	{
-		I2C_Ack_Control(p_i2c_handle->p_i2c_x, ENABLE);
+		I2C_Ack_Control(p_i2c_handle.p_i2c_x, ENABLE);
 	}
 	else
 	{
-		I2C_Ack_Control(p_i2c_handle->p_i2c_x, DISABLE);
+		I2C_Ack_Control(p_i2c_handle.p_i2c_x, DISABLE);
 	}
 }
+
+static void I2C1_GPIO_Pin_Init()
+{
+	// configure GPIOs for I2C2 peripheral - PB6 = SCL, PB7 = SDA
+	GPIO_Pin_Config_t pb7_sda_config = {
+			.gpio_pin_num 			= 7,
+			.gpio_pin_mode 			= GPIO_MODE_ALT,
+			.gpio_pin_speed			= GPIO_SPEED_MED,
+			.gpio_pin_pu_pd_ctrl	= GPIO_PUPD_NONE,
+			.gpio_pin_op_type		= GPIO_OUT_OD,
+			.gpio_pin_alt_fun_mode	= 4
+	};
+
+	GPIO_Handle_t pb7_sda_handle = {
+			.p_gpio_x 				= GPIOB,
+			.gpio_pin_config		= pb7_sda_config
+	};
+
+	GPIO_Init(&pb7_sda_handle);
+
+	GPIO_Pin_Config_t pb6_scl_config = {
+			.gpio_pin_num 			= 6,
+			.gpio_pin_mode 			= GPIO_MODE_ALT,
+			.gpio_pin_speed			= GPIO_SPEED_MED,
+			.gpio_pin_pu_pd_ctrl	= GPIO_PUPD_NONE,
+			.gpio_pin_op_type		= GPIO_OUT_OD,
+			.gpio_pin_alt_fun_mode	= 4
+	};
+
+	GPIO_Handle_t pb6_scl_handle = {
+			.p_gpio_x 				= GPIOB,
+			.gpio_pin_config		= pb6_scl_config
+	};
+
+	GPIO_Init(&pb6_scl_handle);
+}
+
 
 void I2C_Peripheral_Power_Switch(I2C_Register_Map_t *p_i2c_x, uint8_t on_or_off)
 {
 	SET_BIT(&p_i2c_x->CR1, I2C_CR1_PE_MASK);
 }
 
+
+/*
 void I2C_Master_Send_IT(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr)
 {
 	p_i2c_handle.p_tx_buffer = p_tx_buffer;
@@ -152,12 +230,16 @@ void I2C_Master_Send_IT(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint32
 
 	I2C_Generate_Start_Condition(p_i2c_handle);
 }
+*/
 
+/*
 void I2C_Master_Receive_IT(uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr)
 {
 	I2C_Generate_Start_Condition(&global_i2c_handle);
 }
+*/
 
+/*
 void I2C_Handle_TXE(I2C_Handle_t *p_i2c_handle)
 {
 	if (p_i2c_handle->tx_len <= 0)
@@ -190,7 +272,9 @@ void I2C_Handle_TXE(I2C_Handle_t *p_i2c_handle)
 	p_i2c_handle->p_tx_buffer++;
 	p_i2c_handle->tx_len--;
 }
+*/
 
+/*
 void I2C_Handle_RXNE(void)
 {
 	if (global_i2c_handle.len )
@@ -200,7 +284,7 @@ void I2C_Handle_RXNE(void)
 		while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_RXNE, I2C_SR1_CHECK));
 		I2C_Generate_Stop_Condition(p_i2c_handle);
 		*p_rx_buffer = p_i2c_handle->p_i2c_x->DR;
-		DS3231_I2C_Transfer_Complete_Callback();
+		I2C_Receive_Complete_Callback();
 	}
 
 	uint8_t curr_task_num = global_i2c_handle.current_task;
@@ -210,101 +294,115 @@ void I2C_Handle_RXNE(void)
 	global_i2c_handle.task_queue[curr_task_num].p_buffer++;
 	global_i2c_handle.task_queue[curr_task_num].len--;
 }
+*/
 
-void I2C_Master_Send(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr)
+void I2C_Master_Send(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t repeat_start)
 {
 	// MASTER TRANSMISSION
 	// sequence diagram for master transmission is on page 849 of the board reference manual
 	// 1) generate start condition
-	I2C_Generate_Start_Condition(p_i2c_handle);
+	I2C_Generate_Start_Condition(&p_i2c_handle);
 
 	// 2) EV5 (not an interrupt in this blocking API). Start Bit (SB) in SR1
 	// check SB flag in SR1 to clear EV5
-	while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_SB, I2C_SR1_CHECK));
+	while (!I2C_Check_Status_Flag(&p_i2c_handle, I2C_SR1_SB, I2C_SR1_CHECK));
 
 	// 3) After receiving ACK from slave, event EV6. ADDR bit set high (meaning address was matched)
 	// check ADDR flag in SR1, then check TRA flag in SR2 to verify we are configured as transmitter
-	I2C_Write_Address_Byte(p_i2c_handle, slave_addr, I2C_WRITE);
-	while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_ADDR, I2C_SR1_CHECK));
+	I2C_Write_Address_Byte(&p_i2c_handle, slave_addr, I2C_WRITE);
+	while (!I2C_Check_Status_Flag(&p_i2c_handle, I2C_SR1_ADDR, I2C_SR1_CHECK));
 
-	if (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR2_TRA, I2C_SR2_CHECK));
+	if (!I2C_Check_Status_Flag(&p_i2c_handle, I2C_SR2_TRA, I2C_SR2_CHECK));
 
 	while (len > 0)
 	{
 		// 4) After EV6 event cleared, EV8_1 event triggers immediately, meaning TxE = 1, transmit buffer is empty
 		// wait for TxE to be set to 1, indicating EV8_1 event has triggered. write data to DR
-		while(!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_TXE, I2C_SR1_CHECK));
-		p_i2c_handle->p_i2c_x->DR = *p_tx_buffer;
+		while(!I2C_Check_Status_Flag(&p_i2c_handle, I2C_SR1_TXE, I2C_SR1_CHECK));
+		p_i2c_handle.p_i2c_x->DR = *p_tx_buffer;
 		p_tx_buffer++;
 		len--;
 	}
 
 	// 6) After every byte has been sent, generate the stop condition
 	// once length becomes 0, wait for txe=1 and btf=1, then generate stop condition
-	while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_TXE, I2C_SR1_CHECK));
-	while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_BTF, I2C_SR1_CHECK));
-	if (sr == I2C_DISABLE_SR)
-		I2C_Generate_Stop_Condition(p_i2c_handle);
+	while (!I2C_Check_Status_Flag(&p_i2c_handle, I2C_SR1_TXE, I2C_SR1_CHECK));
+	while (!I2C_Check_Status_Flag(&p_i2c_handle, I2C_SR1_BTF, I2C_SR1_CHECK));
+
+	// only generate the stop condition if we don't want to use repeated start
+	if (repeat_start == I2C_DISABLE_SR)
+	{
+		I2C_Generate_Stop_Condition(&p_i2c_handle);
+	}
 }
 
 
-void I2C_Master_Receive(I2C_Handle_t *p_i2c_handle, uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr)
+void I2C_Master_Receive(uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr , uint8_t repeat_start)
 {
 	// MASTER RECEIVER
 	// 1) Generate start condition (same as master send..)
-	I2C_Generate_Start_Condition(p_i2c_handle);
+	I2C_Generate_Start_Condition(&p_i2c_handle);
 
 	// 2) Wait for SB to indicate start condition created
-	while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_SB, I2C_SR1_CHECK));
+	while (!I2C_Check_Status_Flag(&p_i2c_handle, I2C_SR1_SB, I2C_SR1_CHECK));
 
 	// 3) Write slave address to DR with read bit (last bit 1)
-	I2C_Write_Address_Byte(p_i2c_handle, slave_addr, I2C_READ);
+	I2C_Write_Address_Byte(&p_i2c_handle, slave_addr, I2C_READ);
+
 	// wait for ADDR bit to set high. need to check SR2 as well (ADDR is in SR1)
-	while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_ADDR, I2C_SR1_CHECK));
-	if (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR2_TRA, I2C_SR2_CHECK)) {}
+	while (!I2C_Check_Status_Flag(&p_i2c_handle, I2C_SR1_ADDR, I2C_SR1_CHECK));
+	if (!I2C_Check_Status_Flag(&p_i2c_handle, I2C_SR2_TRA, I2C_SR2_CHECK)) {}
 
 	if (len == 1)
 	{
 		// NACK must be sent on first byte
-		I2C_Ack_Control(p_i2c_handle->p_i2c_x, DISABLE);
-		while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_RXNE, I2C_SR1_CHECK));
-		I2C_Generate_Stop_Condition(p_i2c_handle);
-		*p_rx_buffer = p_i2c_handle->p_i2c_x->DR;
+		I2C_Ack_Control(p_i2c_handle.p_i2c_x, DISABLE);
+		while (!I2C_Check_Status_Flag(&p_i2c_handle, I2C_SR1_RXNE, I2C_SR1_CHECK));
+		I2C_Generate_Stop_Condition(&p_i2c_handle);
+		*p_rx_buffer = p_i2c_handle.p_i2c_x->DR;
 	}
 	else
 	{
 		// 4) Wait for RxNE equal 1, meaning DR is full
 		while (len > 0)
 		{
-			while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_RXNE, I2C_SR1_CHECK));
+			while (!I2C_Check_Status_Flag(&p_i2c_handle, I2C_SR1_RXNE, I2C_SR1_CHECK));
 			if (len == 2)
 			{
 				// last byte when len = 1 must be NACK'd, so ACK must be disabled
-				I2C_Ack_Control(p_i2c_handle->p_i2c_x, DISABLE);
-				I2C_Generate_Stop_Condition(p_i2c_handle);
+				I2C_Ack_Control(p_i2c_handle.p_i2c_x, DISABLE);
+				I2C_Generate_Stop_Condition(&p_i2c_handle);
 			}
-			*p_rx_buffer = p_i2c_handle->p_i2c_x->DR;
+			*p_rx_buffer = p_i2c_handle.p_i2c_x->DR;
 			p_rx_buffer++;
 			len--;
 		}
 	}
 
-	if (p_i2c_handle->i2c_config.ack_ctrl == I2C_ACK_EN)
+	if (p_i2c_handle.i2c_config.ack_ctrl == I2C_ACK_EN)
 	{
-		I2C_Ack_Control(p_i2c_handle->p_i2c_x, ENABLE);
+		I2C_Ack_Control(p_i2c_handle.p_i2c_x, ENABLE);
+	}
+
+	if ( repeat_start == I2C_DISABLE_SR )
+	{
+		I2C_Generate_Stop_Condition(&p_i2c_handle);
 	}
 }
+
 
 void I2C_Generate_Start_Condition(I2C_Handle_t *p_i2c_handle)
 {
 	SET_BIT(&p_i2c_handle->p_i2c_x->CR1, I2C_CR1_START_MASK);
 }
 
+
 void I2C_Generate_Stop_Condition(I2C_Handle_t *p_i2c_handle)
 {
 	SET_BIT(&p_i2c_handle->p_i2c_x->CR1, I2C_CR1_STOP_MASK);
 }
 
+/*
 void I2C_Enable_Interrupts(I2C_Handle_t *p_i2c_handle)
 {
 	// determine which ISER register (0-7) will be used
@@ -343,7 +441,9 @@ void I2C_Enable_Interrupts(I2C_Handle_t *p_i2c_handle)
 		break;
 	}
 }
+*/
 
+/*
 void I2C_Set_Interrupt_Priority(I2C_Handle_t *p_i2c_handle, uint8_t priority)
 {
 	uint8_t ipr_num;
@@ -371,10 +471,14 @@ void I2C_Set_Interrupt_Priority(I2C_Handle_t *p_i2c_handle, uint8_t priority)
 	*p_ipr &= ~(priority << bit_offset);
 	*p_ipr |= (priority << bit_offset);
 }
-
-/*
-void I2C_Cleanup(I2C_Register_t *p_i2c_x);
 */
+
+
+void I2C_Cleanup(I2C_Handle_t *p_i2c_x)
+{
+
+}
+
 
 /*************** PRIVATE UTILITY FUNCTIONS *****************/
 uint8_t I2C_Check_Status_Flag(I2C_Handle_t *p_i2c_handle, uint8_t flag_num, uint8_t sr_1_or_2)

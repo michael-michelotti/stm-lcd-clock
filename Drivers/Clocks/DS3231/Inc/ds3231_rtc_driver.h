@@ -1,7 +1,11 @@
 #ifndef INC_DS3231_RTC_DRIVER_H_
 #define INC_DS3231_RTC_DRIVER_H_
 
-#include "stm32f407xx.h"
+#include "clock.h"
+#include "stm32f407xx_i2c_driver.h"
+
+#define HAL_I2C_MODULE_ENABLED
+#define HAL_GPIO_MODULE_ENABLED
 
 typedef enum
 {
@@ -72,10 +76,10 @@ hours_t DS3231_Get_Hours(void);
 day_of_week_t DS3231_Get_Day_Of_Week(void);
 date_t DS3231_Get_Date(void);
 month_t DS3231_Get_Month(void);
-/*
-uint8_t DS3231_Get_Century(void);
-DS3231_Month_Century_t DS3231_Get_Month_Century(void);
-*/
+
+//uint8_t DS3231_Get_Century(void);
+//DS3231_Month_Century_t DS3231_Get_Month_Century(void);
+
 year_t DS3231_Get_Year(void);
 full_date_t DS3231_Get_Full_Date(void);
 full_time_t DS3231_Get_Full_Time(void);
@@ -83,17 +87,17 @@ full_datetime_t DS3231_Get_Full_Datetime(void);
 float DS3231_Get_Temp(void);
 
 // Functions which set data in the DS3231 clock module
-void DS3231_Convert_Hour_Format(I2C_Handle_t *p_i2c_handle, DS3231_12_24_Hour_t hour_mode);
-void DS3231_Set_Seconds(I2C_Handle_t *p_i2c_handle, uint8_t seconds, uint8_t blocking);
-void DS3231_Set_Minutes(I2C_Handle_t *p_i2c_handle, uint8_t minutes);
-void DS3231_Set_Hours(I2C_Handle_t *p_i2c_handle, DS3231_Hours_t hours);
-void DS3231_Set_Day(I2C_Handle_t *p_i2c_handle, DS3231_Day_t day);
-void DS3231_Set_Date(I2C_Handle_t *p_i2c_handle, uint8_t date);
-void DS3231_Set_Month(I2C_Handle_t *p_i2c_handle, uint8_t month);
-void DS3231_Set_Year(I2C_Handle_t *p_i2c_handle, uint8_t year);
+void DS3231_Convert_Hour_Format(I2C_Handle_t *p_i2c_handle, hour_format_t hour_mode);
+void DS3231_Set_Seconds(seconds_t seconds);
+void DS3231_Set_Minutes(minutes_t mins);
+void DS3231_Set_Hours(hours_t hours);
+void DS3231_Set_Day(day_of_week_t dow);
+void DS3231_Set_Date(date_t date);
+void DS3231_Set_Month(month_t month);
+void DS3231_Set_Year(year_t year);
 
-void DS3231_Set_Full_Date(I2C_Handle_t *p_i2c_handle, DS3231_Full_Date_t full_date, uint8_t blocking);
-void DS3231_Set_Full_Time(I2C_Handle_t *p_i2c_handle, DS3231_Time_t full_time);
-void DS3231_Set_Full_Datetime(I2C_Handle_t *p_i2c_handle, DS3231_Datetime_t datetime);
+void DS3231_Set_Full_Date(full_date_t full_date);
+void DS3231_Set_Full_Time(full_time_t full_time);
+void DS3231_Set_Full_Datetime(full_datetime_t full_datetime);
 
 #endif /* INC_DS3231_RTC_DRIVER_H_ */

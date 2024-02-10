@@ -1,13 +1,7 @@
-/*
- * globals.h
- *
- *  Created on: Feb 12, 2023
- *      Author: Michael
- */
-
 #ifndef GLOBALS_H_
 #define GLOBALS_H_
 
+/*
 #include "stm32f407xx_i2c_driver.h"
 
 // LCD display strings
@@ -23,5 +17,6 @@ extern uint8_t tx_buffer_pos;
 extern uint8_t rx_buffer_pos;
 
 extern HAL_Driver app_hal_driver;
+*/
 
 #endif /* GLOBALS_H_ */

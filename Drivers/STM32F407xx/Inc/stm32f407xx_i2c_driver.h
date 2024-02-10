@@ -19,7 +19,7 @@ typedef struct
 	uint8_t 			*p_rx_buffer;	// Pointer to data to be received
 	uint32_t 			tx_len;			// Length of data to be transmitted
 	uint32_t 			rx_len;			// Length of data to be received
-	// uint8_t 			tx_rx_state;	// Whether board is transmitting or receiving
+	uint8_t 			tx_rx_state;	// Whether board is transmitting or receiving
 	uint8_t 			busy_state;		// Whether board is in the middle of transmitting or receiving
 	uint8_t 			slave_addr;		// Slave device address
     uint32_t        	rx_size;		//
@@ -230,8 +230,8 @@ void I2C_Generate_Start_Condition(I2C_Handle_t *p_i2c_handle);
 void I2C_Generate_Stop_Condition(I2C_Handle_t *p_i2c_handle);
 
 void I2C_Handle_SB();
-//void I2C_Handle_ADDR(void);
-//void I2C_Handle_TXE(void);
+void I2C_Handle_ADDR();
+void I2C_Handle_TXE();
 //void I2C_Handle_RXNE(void);
 //void I2C_Interrupt_Callback();
 

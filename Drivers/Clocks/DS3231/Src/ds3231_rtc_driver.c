@@ -46,7 +46,7 @@ Clock_Driver_t get_clock()
 	Clock_Driver_t ds3231_clock_driver = {
 			.Initialize				= DS3231_Initialize,
 
-			.Get_Seconds 			= DS3231_Get_Seconds,
+			.Get_Seconds 			= DS3231_Get_Seconds_IT,
 			.Get_Minutes 			= DS3231_Get_Minutes,
 			.Get_Hours 				= DS3231_Get_Hours,
 			.Get_Day_Of_Week 		= DS3231_Get_Day_Of_Week,
@@ -175,6 +175,19 @@ seconds_t DS3231_Get_Seconds(void)
 
 	// Then, I need to read the byte at that memory, which will be my seconds value
 	i2c_interface.Read_Bytes(*p_i2c_rx_buffer, 1, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
+	return Convert_Seconds_From_DS3231(*p_i2c_rx_buffer);
+}
+
+seconds_t DS3231_Get_Seconds_IT(void)
+{
+	uint8_t p_i2c_rx_buffer[1];
+	uint8_t p_i2c_tx_buffer[1] = { DS3231_SECONDS };
+	I2C_Interface_t i2c_interface = get_i2c_interface();
+	// First, I need to write the memory pointer to the RTC chip, so it's pointing at the seconds
+	i2c_interface.Write_Bytes_IT(*p_i2c_tx_buffer, 1, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
+
+	// Then, I need to read the byte at that memory, which will be my seconds value
+	// i2c_interface.Read_Bytes(*p_i2c_rx_buffer, 1, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
 	return Convert_Seconds_From_DS3231(*p_i2c_rx_buffer);
 }
 

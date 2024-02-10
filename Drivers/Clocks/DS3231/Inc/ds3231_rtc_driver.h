@@ -71,6 +71,7 @@ void DS3231_Initialize(void);
 
 // Functions which retrieve data from the DS3231 clock module
 seconds_t DS3231_Get_Seconds(void);
+seconds_t DS3231_Get_Seconds_IT(void);
 minutes_t DS3231_Get_Minutes(void);
 hours_t DS3231_Get_Hours(void);
 day_of_week_t DS3231_Get_Day_Of_Week(void);

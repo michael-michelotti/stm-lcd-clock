@@ -18,6 +18,7 @@ static void I2C_Set_Own_Address(I2C_Handle_t *p_i2c_handle);
 static I2C_Interface_t i2c_driver = {
 		.Initialize 		= I2C_Init,
 		.Write_Bytes 		= I2C_Master_Send,
+		.Write_Bytes_IT		= I2C_Master_Send_IT,
 		.Read_Bytes 		= I2C_Master_Receive,
 		.Deinitialize 		= I2C_Cleanup,
 };
@@ -28,8 +29,20 @@ I2C_Interface_t get_i2c_interface()
 }
 
 static I2C_Handle_t p_i2c_handle;
-static uint8_t p_tx_buffer[255];
-static uint8_t p_rx_buffer[255];
+static uint8_t p_i2c_tx_buffer[255];
+static uint8_t p_i2c_rx_buffer[255];
+
+
+void I2C1_EV_IRQHandler(void)
+{
+	uint8_t it_status_byte = (p_i2c_handle.p_i2c_x->SR1) & 0xFF;
+
+	if (GET_BIT(&p_i2c_handle.p_i2c_x->SR1, I2C_SR1_SB_MASK))
+	{
+		I2C_Handle_SB();
+		return;
+	}
+}
 
 /*
 void HAL_I2C2_EV_IRQHandler(I2C_Handle_t *p_i2c_handle)
@@ -65,12 +78,11 @@ void HAL_I2C2_EV_IRQHandler(I2C_Handle_t *p_i2c_handle)
 }
 */
 
-/*
-void I2C_Handle_SB(I2C_Handle_t *p_i2c_handle)
+
+void I2C_Handle_SB()
 {
-	I2C_Write_Address_Byte(p_i2c_handle, p_i2c_handle->slave_addr, p_i2c_handle->tx_rx_state);
+	I2C_Write_Address_Byte(&p_i2c_handle, p_i2c_handle.slave_addr, I2C_WRITE);
 }
-*/
 
 
 /*
@@ -140,8 +152,8 @@ void I2C_Init()
 
 	p_i2c_handle.i2c_config = my_i2c_config;
 	p_i2c_handle.p_i2c_x = I2C1;
-	p_i2c_handle.p_tx_buffer = p_tx_buffer;
-	p_i2c_handle.p_rx_buffer = p_rx_buffer;
+	p_i2c_handle.p_tx_buffer = p_i2c_tx_buffer;
+	p_i2c_handle.p_rx_buffer = p_i2c_rx_buffer;
 
 	I2C1_GPIO_Pin_Init();
 
@@ -165,6 +177,10 @@ void I2C_Init()
 
 	// Enable peripheral
 	I2C_Peripheral_Power_Switch(p_i2c_handle.p_i2c_x, ON);
+
+	// Enable interrupts
+	I2C_Enable_Interrupts();
+	I2C_Set_Interrupt_Priority(16);
 
 	// Ack bit must be set after peripheral is enabled
 	if (p_i2c_handle.i2c_config.ack_ctrl == I2C_ACK_EN)
@@ -219,18 +235,6 @@ void I2C_Peripheral_Power_Switch(I2C_Register_Map_t *p_i2c_x, uint8_t on_or_off)
 	SET_BIT(&p_i2c_x->CR1, I2C_CR1_PE_MASK);
 }
 
-
-/*
-void I2C_Master_Send_IT(I2C_Handle_t *p_i2c_handle, uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr)
-{
-	p_i2c_handle.p_tx_buffer = p_tx_buffer;
-	p_i2c_handle.tx_len = len;
-	p_i2c_handle.slave_addr = slave_addr;
-	p_i2c_handle.sr = sr;
-
-	I2C_Generate_Start_Condition(p_i2c_handle);
-}
-*/
 
 /*
 void I2C_Master_Receive_IT(uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr)
@@ -295,6 +299,30 @@ void I2C_Handle_RXNE(void)
 	global_i2c_handle.task_queue[curr_task_num].len--;
 }
 */
+
+void I2C_Master_Send_IT(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t repeat_start)
+{
+	if (p_i2c_handle.busy_state == I2C_NOT_BUSY)
+	{
+		// set the interrupt enable bits for events and buffer events
+		p_i2c_handle.p_i2c_x->CR2 |= ( 1 << I2C_CR2_ITBUFEN );
+		p_i2c_handle.p_i2c_x->CR2 |= ( 1 << I2C_CR2_ITEVTEN );
+
+		// fill the i2c ring buffer with the data to be sent
+		uint8_t *curr_ring_buffer_pos = p_i2c_handle.p_tx_buffer;
+		for (int i = 0; i < len; i++)
+		{
+			*curr_ring_buffer_pos = *p_tx_buffer;
+			curr_ring_buffer_pos++;
+			p_tx_buffer++;
+		}
+		p_i2c_handle.tx_len = len;
+		p_i2c_handle.slave_addr = slave_addr;
+		p_i2c_handle.sr = repeat_start;
+		p_i2c_handle.busy_state = I2C_BUSY;
+		I2C_Generate_Start_Condition(&p_i2c_handle);
+	}
+}
 
 void I2C_Master_Send(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t repeat_start)
 {
@@ -402,14 +430,14 @@ void I2C_Generate_Stop_Condition(I2C_Handle_t *p_i2c_handle)
 	SET_BIT(&p_i2c_handle->p_i2c_x->CR1, I2C_CR1_STOP_MASK);
 }
 
-/*
-void I2C_Enable_Interrupts(I2C_Handle_t *p_i2c_handle)
+
+void I2C_Enable_Interrupts()
 {
 	// determine which ISER register (0-7) will be used
 	uint8_t iser_num;
 	uint8_t bit_pos;
 
-	switch ((uint32_t) p_i2c_handle->p_i2c_x)
+	switch ((uint32_t) p_i2c_handle.p_i2c_x)
 	{
 	case I2C1_BASE_ADDR:
 		iser_num = I2C1_EV_NVIC_POS / 32;
@@ -441,16 +469,15 @@ void I2C_Enable_Interrupts(I2C_Handle_t *p_i2c_handle)
 		break;
 	}
 }
-*/
 
-/*
-void I2C_Set_Interrupt_Priority(I2C_Handle_t *p_i2c_handle, uint8_t priority)
+
+void I2C_Set_Interrupt_Priority(uint8_t priority)
 {
 	uint8_t ipr_num;
 	uint8_t byte_offset;
 	uint8_t bit_offset;
 
-	switch ((uint32_t) p_i2c_handle->p_i2c_x)
+	switch ((uint32_t) p_i2c_handle.p_i2c_x)
 	{
 	case I2C1_BASE_ADDR:
 		ipr_num = I2C1_EV_NVIC_POS / 4;
@@ -471,7 +498,7 @@ void I2C_Set_Interrupt_Priority(I2C_Handle_t *p_i2c_handle, uint8_t priority)
 	*p_ipr &= ~(priority << bit_offset);
 	*p_ipr |= (priority << bit_offset);
 }
-*/
+
 
 
 void I2C_Cleanup(I2C_Handle_t *p_i2c_x)

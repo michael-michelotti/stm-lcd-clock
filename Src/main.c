@@ -22,12 +22,30 @@ int main(void)
 	// Display_Driver_t		app_display_driver = get_display();
 
 	app_clock_driver.Initialize();
-	//seconds_t secs = app_clock_driver.Get_Seconds_IT();
-	app_clock_driver.Get_Seconds_IT();
+	app_clock_driver.Set_Seconds_IT(22);
 
+	seconds_t secs;
 	for(;;)
 	{
+		delay();
+		app_clock_driver.Get_Seconds_IT();
+		delay();
+		app_clock_driver.Get_Minutes_IT();
+		delay();
+		secs = app_clock_driver.Get_Seconds();
+		printf("Blocking secs: %u\n", (unsigned int) secs);
+		delay();
 		//app_display_driver.Display_Update_Time(curr_time);
 		//curr_time = app_clock_driver.Get_Full_Time();
 	}
+}
+
+void Clock_Get_Seconds_Complete_Callback(seconds_t secs)
+{
+	printf("Current Seconds: %u\n", (unsigned int) secs);
+}
+
+void Clock_Get_Minutes_Complete_Callback(minutes_t mins)
+{
+	printf("Current Minutes: %u\n", (unsigned int) mins);
 }

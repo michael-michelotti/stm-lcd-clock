@@ -315,6 +315,7 @@ void I2C_Handle_RXNE(void)
 		}
 		p_i2c_handle.p_i2c_x->CR2 &= ~( 1 << I2C_CR2_ITBUFEN );
 		p_i2c_handle.p_i2c_x->CR2 &= ~( 1 << I2C_CR2_ITEVTEN );
+		p_i2c_handle.busy_state = I2C_NOT_BUSY;
 		I2C_Master_Receive_Complete_Callback(p_i2c_handle);
 	}
 }

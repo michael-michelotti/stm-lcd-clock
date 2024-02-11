@@ -10,13 +10,16 @@
 typedef enum
 {
 	DS3231_STATE_IDLE,
-	DS3231_STATE_WRITING_POINTER_FOR_READ,
-	DS3231_STATE_READING_DATA,
-	DS3231_STATE_WRITING_POINTER_FOR_WRITE,
-	DS3231_STATE_WRITING_DATA,
-	DS3231_STATE_RX_SECONDS,
-	DS3231_STATE_TX,
+	DS3231_STATE_POINTER_WRITE_FOR_READ,
+	DS3231_STATE_DATA_READ,
+	DS3231_STATE_DATA_WRITE,
 } DS3231_State_t;
+
+typedef enum
+{
+	DS3231_UNIT_SECONDS,
+	DS3231_UNIT_MINUTES,
+} DS3231_Unit_t;
 
 // TODO: Decide if this should be an enum or not
 #define DS3231_BASE_ADDR			0x00
@@ -74,6 +77,7 @@ void DS3231_Initialize(void);
 // Functions which retrieve data from the DS3231 clock module
 seconds_t DS3231_Get_Seconds(void);
 void DS3231_Get_Seconds_IT(void);
+void DS3231_Get_Minutes_IT(void);
 minutes_t DS3231_Get_Minutes(void);
 hours_t DS3231_Get_Hours(void);
 day_of_week_t DS3231_Get_Day_Of_Week(void);
@@ -92,6 +96,7 @@ float DS3231_Get_Temp(void);
 // Functions which set data in the DS3231 clock module
 void DS3231_Convert_Hour_Format(I2C_Handle_t *p_i2c_handle, hour_format_t hour_mode);
 void DS3231_Set_Seconds(seconds_t seconds);
+void DS3231_Set_Seconds_IT(seconds_t seconds);
 void DS3231_Set_Minutes(minutes_t mins);
 void DS3231_Set_Hours(hours_t hours);
 void DS3231_Set_Day(day_of_week_t dow);

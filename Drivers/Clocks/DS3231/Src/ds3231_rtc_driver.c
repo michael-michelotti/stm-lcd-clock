@@ -37,16 +37,22 @@ static uint8_t Convert_Hours_12_24(uint8_t current_byte, hour_format_t new_mode)
 static uint8_t Convert_Binary_To_BCD(uint8_t binary_byte);
 static uint8_t Convert_BCD_To_Binary(uint8_t bcd_byte);
 
-DS3231_State_t ds3231_state = DS3231_STATE_IDLE;
-//uint8_t p_i2c_rx_buffer[255];
-//uint8_t p_i2c_tx_buffer[255];
+typedef struct
+{
+	DS3231_State_t 		state;
+	seconds_t			curr_secs;
+	minutes_t			curr_mins;
+} DS3231_Handle_t;
+
+static DS3231_Handle_t ds3231_handle = { DS3231_STATE_IDLE, 0, 0 };
 
 Clock_Driver_t get_clock()
 {
 	Clock_Driver_t ds3231_clock_driver = {
 			.Initialize				= DS3231_Initialize,
 
-			.Get_Seconds 			= DS3231_Get_Seconds_IT,
+			.Get_Seconds 			= DS3231_Get_Seconds,
+			.Get_Seconds_IT			= DS3231_Get_Seconds_IT,
 			.Get_Minutes 			= DS3231_Get_Minutes,
 			.Get_Hours 				= DS3231_Get_Hours,
 			.Get_Day_Of_Week 		= DS3231_Get_Day_Of_Week,
@@ -178,17 +184,47 @@ seconds_t DS3231_Get_Seconds(void)
 	return Convert_Seconds_From_DS3231(*p_i2c_rx_buffer);
 }
 
-seconds_t DS3231_Get_Seconds_IT(void)
+void DS3231_Get_Seconds_IT(void)
 {
-	uint8_t p_i2c_rx_buffer[1];
-	uint8_t p_i2c_tx_buffer[1] = { DS3231_SECONDS };
+	if (ds3231_handle.state != DS3231_STATE_IDLE)
+	{
+		return;
+	}
+
+	uint8_t p_rx_buffer[1];
+	uint8_t p_tx_buffer[2] = { DS3231_SECONDS };
 	I2C_Interface_t i2c_interface = get_i2c_interface();
 	// First, I need to write the memory pointer to the RTC chip, so it's pointing at the seconds
-	i2c_interface.Write_Bytes_IT(*p_i2c_tx_buffer, 1, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
+	ds3231_handle.state = DS3231_STATE_TX;
+	i2c_interface.Write_Bytes_IT(p_tx_buffer, 1, DS3231_SLAVE_ADDR, I2C_ENABLE_SR);
+
+	while( ds3231_handle.state != DS3231_STATE_IDLE );
 
 	// Then, I need to read the byte at that memory, which will be my seconds value
-	// i2c_interface.Read_Bytes(*p_i2c_rx_buffer, 1, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
-	return Convert_Seconds_From_DS3231(*p_i2c_rx_buffer);
+	ds3231_handle.state = DS3231_STATE_RX_SECONDS;
+	i2c_interface.Read_Bytes_IT(p_rx_buffer, 1, DS3231_SLAVE_ADDR, I2C_DISABLE_SR);
+}
+
+void I2C_Master_Send_Complete_Callback(I2C_Handle_t *p_i2c_handle)
+{
+	switch (ds3231_handle.state)
+	{
+		case DS3231_STATE_TX:
+			ds3231_handle.state = DS3231_STATE_IDLE;
+			break;
+	}
+}
+
+void I2C_Master_Receive_Complete_Callback(I2C_Handle_t p_i2c_handle)
+{
+	switch (ds3231_handle.state)
+	{
+		case DS3231_STATE_RX_SECONDS:
+			seconds_t new_secs = Convert_Seconds_From_DS3231(*(p_i2c_handle.p_rx_buffer - 1));
+			ds3231_handle.curr_secs = new_secs;
+			ds3231_handle.state = DS3231_STATE_IDLE;
+			break;
+	}
 }
 
 minutes_t DS3231_Get_Minutes(void)

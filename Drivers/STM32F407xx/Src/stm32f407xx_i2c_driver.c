@@ -20,6 +20,7 @@ static I2C_Interface_t i2c_driver = {
 		.Write_Bytes 		= I2C_Master_Send,
 		.Write_Bytes_IT		= I2C_Master_Send_IT,
 		.Read_Bytes 		= I2C_Master_Receive,
+		.Read_Bytes_IT		= I2C_Master_Receive_IT,
 		.Deinitialize 		= I2C_Cleanup,
 };
 
@@ -50,6 +51,11 @@ void I2C1_EV_IRQHandler(void)
 	else if ( GET_BIT(&p_i2c_handle.p_i2c_x->SR1, I2C_SR1_TXE_MASK) )
 	{
 		I2C_Handle_TXE();
+		return;
+	}
+	else if ( GET_BIT(&p_i2c_handle.p_i2c_x->SR1, I2C_SR1_RXNE_MASK) )
+	{
+		I2C_Handle_RXNE();
 		return;
 	}
 }
@@ -91,7 +97,7 @@ void HAL_I2C2_EV_IRQHandler(I2C_Handle_t *p_i2c_handle)
 
 void I2C_Handle_SB()
 {
-	I2C_Write_Address_Byte(&p_i2c_handle, p_i2c_handle.slave_addr, I2C_WRITE);
+	I2C_Write_Address_Byte(&p_i2c_handle, p_i2c_handle.slave_addr, p_i2c_handle.tx_rx_state);
 }
 
 
@@ -104,11 +110,11 @@ void I2C_Handle_ADDR()
 	}
 	else // I2C peripheral is in master receiver
 	{
-		if (p_i2c_handle.rx_len == 1)
+		if (p_i2c_handle.rx_size == 1)
 		{
 			// ACKing must be disabled on peripheral before last byte
 			I2C_Ack_Control(p_i2c_handle.p_i2c_x, DISABLE);
-			I2C_Generate_Stop_Condition(&p_i2c_handle);
+			//I2C_Generate_Stop_Condition(&p_i2c_handle);
 		}
 		// clear ADDR flag by reading SR2
 		I2C_Check_Status_Flag(&p_i2c_handle, I2C_SR2_TRA, I2C_SR2_CHECK);
@@ -246,14 +252,6 @@ void I2C_Peripheral_Power_Switch(I2C_Register_Map_t *p_i2c_x, uint8_t on_or_off)
 }
 
 
-/*
-void I2C_Master_Receive_IT(uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr, uint8_t sr)
-{
-	I2C_Generate_Start_Condition(&global_i2c_handle);
-}
-*/
-
-
 void I2C_Handle_TXE()
 {
 	if (p_i2c_handle.tx_len <= 0)
@@ -265,20 +263,17 @@ void I2C_Handle_TXE()
 			CLEAR_BIT(&p_i2c_handle.p_i2c_x->CR2, I2C_CR2_ITBUFEN_MASK);
 			return;
 		}
-		// depending on handle SR field, either generate stop condition or repeated start
-		if (p_i2c_handle.sr == I2C_ENABLE_SR)
-		{
-			I2C_Generate_Start_Condition(&p_i2c_handle);
-		}
-		else
+		// depending on handle SR field, either generate stop condition or not
+		//if (p_i2c_handle.sr == I2C_DISABLE_SR)
+		if (1)
 		{
 			I2C_Generate_Stop_Condition(&p_i2c_handle);
 		}
-
-		// re-enable buffer interrupts, since we disabled TXE earlier
-		SET_BIT(&p_i2c_handle.p_i2c_x->CR2, I2C_CR2_ITBUFEN_MASK);
-		// transmit complete, call application callback
-		// I2C_Transfer_Complete_Callback(&p_i2c_handle);
+		p_i2c_handle.p_i2c_x->CR2 &= ~( 1 << I2C_CR2_ITBUFEN );
+		p_i2c_handle.p_i2c_x->CR2 &= ~( 1 << I2C_CR2_ITEVTEN );
+		p_i2c_handle.busy_state = I2C_NOT_BUSY;
+		I2C_Master_Send_Complete_Callback(&p_i2c_handle);
+		return;
 	}
 
 	// DR is empty, shift register may or may not be empty. Either way, write next byte into DR
@@ -288,27 +283,52 @@ void I2C_Handle_TXE()
 }
 
 
-/*
+
 void I2C_Handle_RXNE(void)
 {
-	if (global_i2c_handle.len )
+	if (p_i2c_handle.rx_size == 1)
 	{
-		// NACK must be sent on first byte
-		I2C_Ack_Control(p_i2c_handle->p_i2c_x, DISABLE);
-		while (!I2C_Check_Status_Flag(p_i2c_handle, I2C_SR1_RXNE, I2C_SR1_CHECK));
-		I2C_Generate_Stop_Condition(p_i2c_handle);
-		*p_rx_buffer = p_i2c_handle->p_i2c_x->DR;
-		I2C_Receive_Complete_Callback();
+		// NACK must be sent on first byte for one byte receive
+		//I2C_Ack_Control(p_i2c_handle.p_i2c_x, DISABLE);
+		//I2C_Generate_Stop_Condition(&p_i2c_handle);
+		*p_i2c_handle.p_rx_buffer = p_i2c_handle.p_i2c_x->DR;
+		p_i2c_handle.p_rx_buffer++;
+		p_i2c_handle.rx_len--;
+	}
+	else
+	{
+		if (p_i2c_handle.rx_len == 2)
+		{
+			// last byte when len = 1 must be NACK'd, so ACK must be disabled when len = 2
+			I2C_Ack_Control(p_i2c_handle.p_i2c_x, DISABLE);
+		}
+		*p_i2c_handle.p_rx_buffer = p_i2c_handle.p_i2c_x->DR;
+		p_i2c_handle.p_rx_buffer++;
+		p_i2c_handle.rx_len--;
 	}
 
-	uint8_t curr_task_num = global_i2c_handle.current_task;
-
-
-	*global_i2c_handle.task_queue[curr_task_num].p_buffer = global_i2c_handle.p_i2c_x->DR;
-	global_i2c_handle.task_queue[curr_task_num].p_buffer++;
-	global_i2c_handle.task_queue[curr_task_num].len--;
+	if (p_i2c_handle.rx_len == 0)
+	{
+		if (p_i2c_handle.sr == I2C_DISABLE_SR)
+		{
+			I2C_Generate_Stop_Condition(&p_i2c_handle);
+		}
+		p_i2c_handle.p_i2c_x->CR2 &= ~( 1 << I2C_CR2_ITBUFEN );
+		p_i2c_handle.p_i2c_x->CR2 &= ~( 1 << I2C_CR2_ITEVTEN );
+		I2C_Master_Receive_Complete_Callback(p_i2c_handle);
+	}
 }
-*/
+
+__weak void I2C_Master_Receive_Complete_Callback(I2C_Handle_t p_i2c_handle)
+{
+	// implemented at the driver level
+}
+
+__weak void I2C_Master_Send_Complete_Callback(I2C_Handle_t *p_i2c_handle)
+{
+	// implemented at the driver level
+}
+
 
 void I2C_Master_Send_IT(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t repeat_start)
 {
@@ -372,6 +392,25 @@ void I2C_Master_Send(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uin
 	if (repeat_start == I2C_DISABLE_SR)
 	{
 		I2C_Generate_Stop_Condition(&p_i2c_handle);
+	}
+}
+
+
+void I2C_Master_Receive_IT(uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr , uint8_t repeat_start)
+{
+	if (p_i2c_handle.busy_state == I2C_NOT_BUSY)
+	{
+		// set the interrupt enable bits for events and buffer events
+		p_i2c_handle.p_i2c_x->CR2 |= ( 1 << I2C_CR2_ITBUFEN );
+		p_i2c_handle.p_i2c_x->CR2 |= ( 1 << I2C_CR2_ITEVTEN );
+
+		p_i2c_handle.rx_len = len;
+		p_i2c_handle.rx_size = len;
+		p_i2c_handle.slave_addr = slave_addr;
+		p_i2c_handle.sr = repeat_start;
+		p_i2c_handle.busy_state = I2C_BUSY;
+		p_i2c_handle.tx_rx_state = I2C_STATE_RX;
+		I2C_Generate_Start_Condition(&p_i2c_handle);
 	}
 }
 

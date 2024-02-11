@@ -9,6 +9,7 @@ typedef struct
 	void			(*Initialize)(void);
 
 	seconds_t 		(*Get_Seconds)(void);
+	void			(*Get_Seconds_IT)(void);
 	minutes_t 		(*Get_Minutes)(void);
 	hours_t 		(*Get_Hours)(void);
 	day_of_week_t	(*Get_Day_Of_Week)(void);

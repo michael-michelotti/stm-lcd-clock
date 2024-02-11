@@ -12,8 +12,10 @@ typedef enum
 	DS3231_STATE_IDLE,
 	DS3231_STATE_WRITING_POINTER_FOR_READ,
 	DS3231_STATE_READING_DATA,
-	S3231_STATE_WRITING_POINTER_FOR_WRITE,
-	DS3231_STATE_WRITING_DATA
+	DS3231_STATE_WRITING_POINTER_FOR_WRITE,
+	DS3231_STATE_WRITING_DATA,
+	DS3231_STATE_RX_SECONDS,
+	DS3231_STATE_TX,
 } DS3231_State_t;
 
 // TODO: Decide if this should be an enum or not
@@ -71,7 +73,7 @@ void DS3231_Initialize(void);
 
 // Functions which retrieve data from the DS3231 clock module
 seconds_t DS3231_Get_Seconds(void);
-seconds_t DS3231_Get_Seconds_IT(void);
+void DS3231_Get_Seconds_IT(void);
 minutes_t DS3231_Get_Minutes(void);
 hours_t DS3231_Get_Hours(void);
 day_of_week_t DS3231_Get_Day_Of_Week(void);

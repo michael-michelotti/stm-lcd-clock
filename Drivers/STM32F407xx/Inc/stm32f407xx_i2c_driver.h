@@ -30,6 +30,7 @@ typedef struct
 {
 	void			(*Initialize)();
 	void 			(*Read_Bytes)(uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr, uint8_t repeat_start);
+	void			(*Read_Bytes_IT)(uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr, uint8_t repeat_start);
 	void	 		(*Write_Bytes)(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t repeat_start);
 	void	 		(*Write_Bytes_IT)(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t repeat_start);
 	void	 		(*Deinitialize)(I2C_Handle_t *p_i2c_x);
@@ -224,6 +225,7 @@ void I2C_Peripheral_Power_Switch(I2C_Register_Map_t *p_i2c_x, uint8_t on_or_off)
 void I2C_Master_Send(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t repeat_start);
 void I2C_Master_Send_IT(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t repeat_start);
 void I2C_Master_Receive(uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr, uint8_t repeat_start);
+void I2C_Master_Receive_IT(uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr, uint8_t repeat_start);
 void I2C_Cleanup(I2C_Handle_t *p_i2c_x);
 
 void I2C_Generate_Start_Condition(I2C_Handle_t *p_i2c_handle);
@@ -232,8 +234,11 @@ void I2C_Generate_Stop_Condition(I2C_Handle_t *p_i2c_handle);
 void I2C_Handle_SB();
 void I2C_Handle_ADDR();
 void I2C_Handle_TXE();
-//void I2C_Handle_RXNE(void);
+void I2C_Handle_RXNE(void);
 //void I2C_Interrupt_Callback();
+
+void I2C_Master_Receive_Complete_Callback(I2C_Handle_t p_i2c_handle);
+void I2C_Master_Send_Complete_Callback(I2C_Handle_t *p_i2c_handle);
 
 void I2C_Enable_Interrupts();
 void I2C_Set_Interrupt_Priority(uint8_t priority);

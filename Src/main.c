@@ -22,7 +22,8 @@ int main(void)
 	// Display_Driver_t		app_display_driver = get_display();
 
 	app_clock_driver.Initialize();
-	seconds_t secs = app_clock_driver.Get_Seconds();
+	//seconds_t secs = app_clock_driver.Get_Seconds_IT();
+	app_clock_driver.Get_Seconds_IT();
 
 	for(;;)
 	{

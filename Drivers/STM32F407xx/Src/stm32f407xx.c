@@ -1,10 +1,3 @@
-/*
- * stm32f407xx.c
- *
- *  Created on: Feb 9, 2023
- *      Author: Michael
- */
-
 #include "stm32f407xx.h"
 
 uint32_t GET_FIELD(uint32_t *ADDR, uint32_t MASK)
@@ -19,4 +12,9 @@ uint8_t GET_BIT(uint32_t *ADDR, uint32_t MASK)
 	if (*ADDR & MASK)
 		return 1;
 	return 0;
+}
+
+void delay(void)
+{
+	for(uint32_t i = 0 ; i < 500000 ; i ++);
 }

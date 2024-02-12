@@ -14,14 +14,16 @@ typedef enum
 
 typedef enum
 {
+	DS3231_UNIT_NONE,
 	DS3231_UNIT_SECONDS,
 	DS3231_UNIT_MINUTES,
 } DS3231_Unit_t;
 
 typedef struct
 {
-	Clock_Handle_t 		clock_handle;
+	Clock_Device_t 		clock_dev;
 	DS3231_State_t		state;
+	DS3231_Unit_t		curr_unit;
 } DS3231_Handle_t;
 
 // TODO: Decide if this should be an enum or not

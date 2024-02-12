@@ -12,36 +12,14 @@ typedef enum
 	CLOCK_CTRL_BUSY_SETTING
 } Clock_Ctrl_Stage_t;
 
-typedef enum
-{
-	CLOCK_UNIT_NONE,
-	CLOCK_UNIT_SECONDS,
-	CLOCK_UNIT_MINUTES,
-	CLOCK_UNIT_HOURS,
-	CLOCK_UNIT_DOW,
-	CLOCK_UNIT_DATE,
-	CLOCK_UNIT_MONTH,
-	CLOCK_UNIT_YEAR,
-	CLOCK_UNIT_FULL_DATE,
-	CLOCK_UNIT_FULL_TIME,
-	CLOCK_UNIT_FULL_DATETIME
-} Clock_Time_Unit_t;
-
 
 typedef struct
 {
 	seconds_t			curr_seconds;
 	minutes_t			curr_minutes;
 	hours_t				curr_hours;
-} Clock_Device_t;
-
-
-typedef struct
-{
 	Clock_Ctrl_Stage_t	ctrl_stage;
-	Clock_Time_Unit_t	curr_unit;
-	Clock_Device_t		clock_dev;
-} Clock_Handle_t;
+} Clock_Device_t;
 
 
 typedef struct

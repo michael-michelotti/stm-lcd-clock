@@ -40,7 +40,7 @@ void GPIO_Init(GPIO_Handle_t *p_gpio_handle)
 
 		GPIO_EXTI_Config(p_gpio_handle);
 		// unmask interrupts for desired input line
-		SET_BIT(&EXTI->IMR, (1 << p_gpio_handle->gpio_pin_config.gpio_pin_num));
+		SET_BIT(EXTI->IMR, (1 << p_gpio_handle->gpio_pin_config.gpio_pin_num));
 	}
 
 	uint32_t gpio_register_mask = 0b11 << (2 * p_gpio_handle->gpio_pin_config.gpio_pin_num);
@@ -163,7 +163,7 @@ void GPIO_Peri_Clk_Ctrl(GPIO_Register_Map_t *p_gpio_x, uint8_t enable)
 
 uint8_t GPIO_Read_From_Input_Pin(GPIO_Register_Map_t *p_gpio_x, uint8_t pin_num)
 {
-	return GET_BIT(&p_gpio_x->IDR, (pin_num << 0x1));
+	return GET_BIT(p_gpio_x->IDR, (pin_num << 0x1));
 }
 
 uint16_t GPIO_Read_From_Input_Port(GPIO_Register_Map_t *p_gpio_x)
@@ -180,7 +180,7 @@ void GPIO_Write_To_Output_Pin(GPIO_Register_Map_t *p_gpio_x, uint8_t pin_num, ui
 	}
 	else
 	{
-		CLEAR_BIT(&p_gpio_x->ODR, (0x1 << pin_num)); // just clear the bit
+		CLEAR_BIT(p_gpio_x->ODR, (0x1 << pin_num)); // just clear the bit
 	}
 }
 
@@ -236,10 +236,10 @@ void GPIO_IRQ_Priority_Config(uint8_t irq_num, uint32_t irq_prio)
 void GPIO_IRQ_Handler(uint8_t pin_num)
 {
 	// clear the exti pending register corresponding to pin number
-	if (GET_BIT(&EXTI->PR, (1 << pin_num)))
+	if (GET_BIT(EXTI->PR, (1 << pin_num)))
 	{
 		// clear the bit
-		CLEAR_BIT(&EXTI->PR, (1 << pin_num));
+		CLEAR_BIT(EXTI->PR, (1 << pin_num));
 	}
 }
 
@@ -256,16 +256,16 @@ static void GPIO_EXTI_Rising_Falling_Config(uint8_t gpio_pin_num, uint8_t enable
 	if (rise_or_fall == RISING)
 	{
 		if (enable == ENABLE)
-			SET_BIT(&EXTI->RTSR, (1 << gpio_pin_num));
+			SET_BIT(EXTI->RTSR, (1 << gpio_pin_num));
 		else
-			CLEAR_BIT(&EXTI->RTSR, (1 << gpio_pin_num));
+			CLEAR_BIT(EXTI->RTSR, (1 << gpio_pin_num));
 	}
 	else if (rise_or_fall == FALLING)
 	{
 		if (enable == ENABLE)
-			SET_BIT(&EXTI->FTSR, (1 << gpio_pin_num));
+			SET_BIT(EXTI->FTSR, (1 << gpio_pin_num));
 		else
-			CLEAR_BIT(&EXTI->FTSR, (1 << gpio_pin_num));
+			CLEAR_BIT(EXTI->FTSR, (1 << gpio_pin_num));
 	}
 }
 

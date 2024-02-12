@@ -31,15 +31,20 @@
 	while (0)
 // Given a mask for any field in a register, clear that field
 #define CLEAR_FIELD(ADDR, MASK) *(ADDR) &= ~(MASK)
+
 // Given an address and an offset, set the bit at that offset
 // #define SET_BIT(ADDR, BIT) *(ADDR) |= (1 << (BIT))
-#define SET_BIT(ADDR, MASK) *(ADDR) |= (MASK)
+#define SET_BIT(REG, MASK) ((REG) |= (MASK))
+
 // Given an address and an offset, clear the bit at that offset
 // #define CLEAR_BIT(ADDR, BIT) *(ADDR) &= ~(1 << (BIT))
-#define CLEAR_BIT(ADDR, MASK) *(ADDR) &= ~(MASK)
+#define CLEAR_BIT(REG, MASK) ((REG) &= ~(MASK))
+
 #define CHECK_BIT(ADDR, MASK) *(ADDR) & (MASK)
-uint32_t GET_FIELD(uint32_t *ADDR, uint32_t MASK);
-uint8_t GET_BIT(uint32_t *ADDR, uint32_t MASK);
+
+uint32_t GET_FIELD(volatile uint32_t REG, uint32_t MASK);
+
+uint8_t GET_BIT(volatile uint32_t REG, uint32_t MASK);
 
 /*************** MEMORY ADDRESSES *****************/
 // Major memory segment addresses

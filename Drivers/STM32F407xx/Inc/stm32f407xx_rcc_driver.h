@@ -11,6 +11,14 @@
 #define RCC_CFGR_PPRE1		10		// APB1 prescaler; division from AHB clock to APB1 clock
 #define RCC_CFGR_PPRE2		13		// APB2 prescaler; division from AHB clock to APB2 clock
 
+typedef enum
+{
+	SYS_CLK_HSI,
+	SYS_CLK_HSE,
+	SYS_CLK_PLL,
+	SYS_CLK_NA
+} System_Clock_t;
+
 uint32_t RCC_Get_Sys_Clk_Frequency();
 uint32_t RCC_Get_AHB_Prescaler();
 uint32_t RCC_Get_APB_Prescaler();

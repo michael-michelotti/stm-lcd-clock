@@ -4,7 +4,6 @@
 
 #include "stm32f407xx.h"
 #include "stm32f407xx_gpio_driver.h"
-#include "globals.h"
 
 static char int_to_ascii_char(uint8_t int_to_covert);
 static void int_to_zero_padded_ascii(char *result, uint8_t int_to_convert);

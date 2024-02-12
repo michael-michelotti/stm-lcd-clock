@@ -4,9 +4,6 @@
 #include "clock.h"
 #include "stm32f407xx_i2c_driver.h"
 
-#define HAL_I2C_MODULE_ENABLED
-#define HAL_GPIO_MODULE_ENABLED
-
 typedef enum
 {
 	DS3231_STATE_IDLE,
@@ -20,6 +17,12 @@ typedef enum
 	DS3231_UNIT_SECONDS,
 	DS3231_UNIT_MINUTES,
 } DS3231_Unit_t;
+
+typedef struct
+{
+	Clock_Handle_t 		clock_handle;
+	DS3231_State_t		state;
+} DS3231_Handle_t;
 
 // TODO: Decide if this should be an enum or not
 #define DS3231_BASE_ADDR			0x00

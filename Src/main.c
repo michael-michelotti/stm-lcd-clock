@@ -18,21 +18,21 @@
 
 int main(void)
 {
-	Clock_Driver_t 			app_clock_driver = get_clock();
+	Clock_Driver_t 			*app_clock_driver = get_clock_driver();
 	// Display_Driver_t		app_display_driver = get_display();
 
-	app_clock_driver.Initialize();
-	app_clock_driver.Set_Seconds_IT(22);
+	app_clock_driver->Initialize();
+	app_clock_driver->Set_Seconds_IT(22);
 
 	seconds_t secs;
 	for(;;)
 	{
 		delay();
-		app_clock_driver.Get_Seconds_IT();
+		app_clock_driver->Get_Seconds_IT();
 		delay();
-		app_clock_driver.Get_Minutes_IT();
+		app_clock_driver->Get_Minutes_IT();
 		delay();
-		secs = app_clock_driver.Get_Seconds();
+		secs = app_clock_driver->Get_Seconds();
 		printf("Blocking secs: %u\n", (unsigned int) secs);
 		delay();
 		//app_display_driver.Display_Update_Time(curr_time);
@@ -42,6 +42,7 @@ int main(void)
 
 void Clock_Get_Seconds_Complete_Callback(seconds_t secs)
 {
+	// this is probably where i should update my display right?
 	printf("Current Seconds: %u\n", (unsigned int) secs);
 }
 

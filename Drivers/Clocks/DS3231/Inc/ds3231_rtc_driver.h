@@ -60,12 +60,13 @@ typedef struct
 #define DS3231_LEN_SECONDS					1
 #define DS3231_LEN_MINUTES					1
 #define DS3231_LEN_HOURS					1
-#define DS3231_LEN_FULL_TIME				(DS3231_LEN_SECONDS + DS3231_LEN_MINUTES + DS3231_LEN_HOURS)
+#define DS3231_LEN_FULL_TIME				((DS3231_LEN_SECONDS) + (DS3231_LEN_MINUTES) + (DS3231_LEN_HOURS))
 #define DS3231_LEN_DOW						1
 #define DS3231_LEN_DATE						1
 #define DS3231_LEN_MONTH_CENTURY			1
 #define DS3231_LEN_YEAR						1
-#define DS3231_LEN_FULL_DATE				(DS3231_LEN_DOW + DS3231_LEN_DATE + DS3231_LEN_MONTH_CENTURY + DS3231_LEN_YEAR)
+#define DS3231_LEN_FULL_DATE				((DS3231_LEN_DOW) + (DS3231_LEN_DATE) + (DS3231_LEN_MONTH_CENTURY) + (DS3231_LEN_YEAR))
+#define DS3231_LEN_DATETIME					((DS3231_LEN_FULL_DATE) + (DS3231_LEN_FULL_TIME))
 
 #define DS3231_SLAVE_ADDR			0b1101000
 
@@ -73,11 +74,6 @@ typedef struct
 #define DS3231_AM_PM_BIT			5
 #define DS3231_12_24_BIT			6
 #define DS3231_CENTURY_BIT			7
-
-// How many registers date and time span in RTC
-#define FULL_DATE_LEN				4
-#define FULL_TIME_LEN				3
-#define FULL_DATETIME_LEN			( (FULL_DATE_LEN) + (FULL_TIME_LEN) )
 
 // Minimum and maximum values for various fields, for validation purposes
 #define DS3231_MINIMUM_SECONDS		0

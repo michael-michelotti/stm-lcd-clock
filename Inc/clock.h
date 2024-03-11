@@ -32,11 +32,8 @@ typedef struct
 	void			(*Initialize)(Clock_Device_t);
 
 	seconds_t 		(*Get_Seconds)(void);
-	void			(*Get_Seconds_IT)(void);
 	minutes_t 		(*Get_Minutes)(void);
-	void			(*Get_Minutes_IT)(void);
 	hours_t 		(*Get_Hours)(void);
-	void			(*Get_Hours_IT)(void);
 	day_of_week_t	(*Get_Day_Of_Week)(void);
 	date_t 			(*Get_Date)(void);
 	month_t 		(*Get_Month)(void);
@@ -44,8 +41,13 @@ typedef struct
 	century_t		(*Get_Century)(void);
 	full_date_t		(*Get_Full_Date)(void);
 	full_time_t		(*Get_Full_Time)(void);
-	void			(*Get_Full_Time_IT)(void);
 	full_datetime_t (*Get_Full_Datetime)(void);
+
+	void			(*Get_Hours_IT)(void);
+	void			(*Get_Minutes_IT)(void);
+	void			(*Get_Seconds_IT)(void);
+	void 			(*Get_Day_Of_Week_IT)(void);
+	void			(*Get_Full_Time_IT)(void);
 
 	void 			(*Set_Seconds)(seconds_t secs);
 	void			(*Set_Seconds_IT)(seconds_t secs);
@@ -60,13 +62,14 @@ typedef struct
 	void 			(*Set_Full_Datetime)(full_datetime_t full_datetime);
 } Clock_Driver_t;
 
-Clock_Driver_t *get_clock_driver();
+Clock_Driver_t *get_clock_driver(void);
 
 void Clock_Get_Seconds_Complete_Callback(Clock_Device_t *clock_dev);
 void Clock_Get_Minutes_Complete_Callback(Clock_Device_t *clock_dev);
 void Clock_Set_Seconds_Complete_Callback(Clock_Device_t *clock_dev);
 void Clock_Get_Hours_Complete_Callback(Clock_Device_t *clock_dev);
 void Clock_Get_Full_Time_Complete_Callback(Clock_Device_t *clock_dev);
+void Clock_Get_Day_Of_Week_Complete_Callback(Clock_Device_t *clock_dev);
 
 #ifdef DS3231
 #	include "ds3231_rtc_driver.h"

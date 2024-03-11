@@ -5,23 +5,23 @@
 #include "stm32f407xx_gpio_driver.h"
 
 /*************** PRIVATE IMPLEMENTATION FUNCTION DECLARATIONS START *****************/
-static void I2C_Init();
+static void I2C_Init(void);
 static void I2C_Master_Send(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t repeat_start);
 static void I2C_Master_Send_IT(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t repeat_start);
 static void I2C_Master_Receive(uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr , uint8_t repeat_start);
 static void I2C_Master_Receive_IT(uint32_t len, uint8_t slave_addr , uint8_t repeat_start);
 static void I2C_Cleanup();
 
-static void I2C_Handle_SB();
-static void I2C_Handle_ADDR();
-static void I2C_Handle_TXE();
+static void I2C_Handle_SB(void);
+static void I2C_Handle_ADDR(void);
+static void I2C_Handle_TXE(void);
 static void I2C_Handle_RXNE(void);
 
-static void I2C1_GPIO_Pin_Init();
+static void I2C1_GPIO_Pin_Init(void);
 static void I2C_Clk_Ctrl(I2C_Register_Map_t *p_i2c_x, uint8_t enable);
 static void I2C_Generate_Start_Condition(I2C_Handle_t *p_i2c_handle);
 static void I2C_Generate_Stop_Condition(I2C_Handle_t *p_i2c_handle);
-static void I2C_Enable_Interrupts();
+static void I2C_Enable_Interrupts(void);
 static void I2C_Set_Interrupt_Priority(uint8_t priority);
 static uint8_t I2C_Check_Status_Flag(I2C_Handle_t *p_i2c_handle, uint8_t flag_num, uint8_t sr_1_or_2);
 static void I2C_Write_Address_Byte(I2C_Handle_t *p_i2c_handle, uint8_t slave_addr, uint8_t read_or_write);
@@ -50,14 +50,14 @@ static const I2C_Interface_t i2c_driver = {
 /*************** LOCAL I2C DRIVER VARIABLES END *****************/
 
 // Return pointer to the I2C Driver for external interface
-I2C_Interface_t *get_i2c_interface()
+I2C_Interface_t *get_i2c_interface(void)
 {
 	return &i2c_driver;
 }
 
 /*************** PRIVATE IMPLEMENTATION FUNCTIONS START *****************/
 // Driver functions in order defined above
-static void I2C_Init()
+static void I2C_Init(void)
 {
 	I2C_Device_t i2c_dev = {
 			.clock_speed = I2C_SPEED_SM,
@@ -235,7 +235,7 @@ static void I2C_Master_Receive_IT(uint32_t len, uint8_t slave_addr , uint8_t rep
 	}
 }
 
-static void I2C_Cleanup()
+static void I2C_Cleanup(void)
 {
 	// TBD
 }
@@ -268,7 +268,7 @@ void I2C1_EV_IRQHandler(void)
 	}
 }
 
-static void I2C_Handle_SB()
+static void I2C_Handle_SB(void)
 {
 	if (p_i2c_handle.i2c_dev.control_stage == I2C_CTRL_BUSY_TX)
 	{
@@ -280,7 +280,7 @@ static void I2C_Handle_SB()
 	}
 }
 
-static void I2C_Handle_ADDR()
+static void I2C_Handle_ADDR(void)
 {
 	if (p_i2c_handle.i2c_dev.control_stage == I2C_CTRL_BUSY_TX)
 	{
@@ -299,7 +299,7 @@ static void I2C_Handle_ADDR()
 	}
 }
 
-static void I2C_Handle_TXE()
+static void I2C_Handle_TXE(void)
 {
 	if (p_i2c_handle.i2c_dev.tx_len <= 0)
 	{
@@ -376,7 +376,7 @@ __weak void I2C_Read_Complete_Callback(I2C_Device_t *p_i2c_dev)
 }
 
 // UTILITY FUNCTIONS
-static void I2C1_GPIO_Pin_Init()
+static void I2C1_GPIO_Pin_Init(void)
 {
 	// configure GPIOs for I2C2 peripheral - PB6 = SCL, PB7 = SDA
 	GPIO_Pin_Config_t pb6_scl_config = {
@@ -457,7 +457,7 @@ static void I2C_Generate_Stop_Condition(I2C_Handle_t *p_i2c_handle)
 	SET_BIT(p_i2c_handle->p_i2c_x->CR1, I2C_CR1_STOP_MASK);
 }
 
-static void I2C_Enable_Interrupts()
+static void I2C_Enable_Interrupts(void)
 {
 	// determine which ISER register (0-7) will be used
 	uint8_t iser_num;

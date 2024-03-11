@@ -81,6 +81,11 @@ void Clock_Get_Hours_Complete_Callback(Clock_Device_t *clock_dev)
 	app_display_driver->Display_Update_Hours(clock_dev->hours);
 }
 
+void Clock_Get_Day_Of_Week_Complete_Callback(Clock_Device_t *clock_dev)
+{
+	app_display_driver->Display_Update_Day_Of_Week(clock_dev->dow);
+}
+
 void Clock_Get_Full_Time_Complete_Callback(Clock_Device_t *clock_dev)
 {
 	full_time_t full_time = {

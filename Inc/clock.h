@@ -49,7 +49,11 @@ typedef struct
 	void 			(*Get_Day_Of_Week_IT)(void);
 	void 			(*Get_Date_IT)(void);
 	void	 		(*Get_Month_IT)(void);
+	void			(*Get_Year_IT)(void);
+	void			(*Get_Century_IT)(void);
+	void			(*Get_Full_Date_IT)(void);
 	void			(*Get_Full_Time_IT)(void);
+	void			(*Get_Datetime_IT)(void);
 
 	void 			(*Set_Seconds)(seconds_t secs);
 	void			(*Set_Seconds_IT)(seconds_t secs);
@@ -73,7 +77,11 @@ void Clock_Get_Hours_Complete_Callback(Clock_Device_t *clock_dev);
 void Clock_Get_Full_Time_Complete_Callback(Clock_Device_t *clock_dev);
 void Clock_Get_Day_Of_Week_Complete_Callback(Clock_Device_t *clock_dev);
 void Clock_Get_Month_Complete_Callback(Clock_Device_t *clock_dev);
+void Clock_Get_Year_Complete_Callback(Clock_Device_t *clock_dev);
+void Clock_Get_Century_Complete_Callback(Clock_Device_t *clock_dev);
 void Clock_Get_Date_Complete_Callback(Clock_Device_t *clock_dev);
+void Clock_Get_Full_Date_Complete_Callback(Clock_Device_t *clock_dev);
+void Clock_Get_Datetime_Complete_Callback(Clock_Device_t *clock_dev);
 
 #ifdef DS3231
 #	include "ds3231_rtc_driver.h"

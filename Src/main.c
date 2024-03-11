@@ -106,6 +106,27 @@ void Clock_Get_Full_Time_Complete_Callback(Clock_Device_t *clock_dev)
 	app_display_driver->Display_Update_Time(full_time);
 }
 
+void Clock_Get_Datetime_Complete_Callback(Clock_Device_t *clock_dev)
+{
+	full_time_t full_time = {
+			.hours = clock_dev->hours,
+			.minutes = clock_dev->minutes,
+			.seconds = clock_dev->seconds
+	};
+	full_date_t full_date = {
+			.day_of_week = clock_dev->dow,
+			.date = clock_dev->date,
+			.month = clock_dev->month,
+			.century = clock_dev->century,
+			.year = clock_dev->year
+	};
+	full_datetime_t datetime = {
+			.date = full_date,
+			.time = full_time
+	};
+	app_display_driver->Display_Update_Datetime(datetime);
+}
+
 void Clock_Set_Seconds_Complete_Callback(Clock_Device_t *clock_dev)
 {
 	printf("Seconds Set: %u\n", (unsigned int) clock_dev->seconds);

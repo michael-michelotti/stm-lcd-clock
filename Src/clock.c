@@ -33,7 +33,32 @@ __weak void Clock_Get_Date_Complete_Callback(Clock_Device_t *clock_dev)
 	// implemented in application code
 }
 
+__weak void Clock_Get_Month_Complete_Callback(Clock_Device_t *clock_dev)
+{
+	// implemented in application code
+}
+
+__weak void Clock_Get_Year_Complete_Callback(Clock_Device_t *clock_dev)
+{
+	// implemented in application code
+}
+
+__weak void Clock_Get_Century_Complete_Callback(Clock_Device_t *clock_dev)
+{
+	// implemented in application code
+}
+
+__weak void Clock_Get_Full_Date_Complete_Callback(Clock_Device_t *clock_dev)
+{
+	// implemented in application code
+}
+
 __weak void Clock_Get_Full_Time_Complete_Callback(Clock_Device_t *clock_dev)
+{
+	// implemented in application code
+}
+
+__weak void Clock_Get_Datetime_Complete_Callback(Clock_Device_t *clock_dev)
 {
 	// implemented in application code
 }

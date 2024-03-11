@@ -13,7 +13,12 @@ __weak void Clock_Get_Minutes_Complete_Callback(Clock_Device_t *clock_dev)
 }
 
 
-__weak void Clock_Set_Seconds_Comlpete_Callback(Clock_Device_t *clock_dev)
+__weak void Clock_Set_Seconds_Complete_Callback(Clock_Device_t *clock_dev)
+{
+	// implemented in application code
+}
+
+__weak void Clock_Get_Hours_Complete_Callback(Clock_Device_t *clock_dev)
 {
 	// implemented in application code
 }

@@ -17,6 +17,12 @@ typedef enum
 	DS3231_UNIT_NONE,
 	DS3231_UNIT_SECONDS,
 	DS3231_UNIT_MINUTES,
+	DS3231_UNIT_HOURS,
+	DS3231_UNIT_FULL_TIME,
+	DS3231_UNIT_DATE,
+	DS3231_UNIT_DOW,
+	DS3231_UNIT_MONTHS,
+	DS3231_UNIT_YEAR
 } DS3231_Unit_t;
 
 typedef struct
@@ -30,6 +36,7 @@ typedef struct
 // TODO: Decide if this should be an enum or not
 #define DS3231_BASE_ADDR			0x00
 #define DS3231_SECONDS				0x00
+
 #define DS3231_MINUTES				0x01
 #define DS3231_HOURS				0x02
 #define DS3231_DAY					0x03
@@ -48,6 +55,7 @@ typedef struct
 #define DS3231_AGING_OFFSET			0x10
 #define DS3231_MSB_TEMP				0x11
 #define DS3231_LSB_TEMP				0x12
+#define DS3231_FULL_TIME			0x13
 
 #define DS3231_SLAVE_ADDR			0b1101000
 
@@ -84,6 +92,7 @@ void DS3231_Initialize(Clock_Device_t ds3231_dev);
 seconds_t DS3231_Get_Seconds(void);
 void DS3231_Get_Seconds_IT(void);
 void DS3231_Get_Minutes_IT(void);
+void DS3231_Get_Hours_IT(void);
 minutes_t DS3231_Get_Minutes(void);
 hours_t DS3231_Get_Hours(void);
 day_of_week_t DS3231_Get_Day_Of_Week(void);

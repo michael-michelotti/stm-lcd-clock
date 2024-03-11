@@ -36,6 +36,7 @@ typedef struct
 	minutes_t 		(*Get_Minutes)(void);
 	void			(*Get_Minutes_IT)(void);
 	hours_t 		(*Get_Hours)(void);
+	void			(*Get_Hours_IT)(void);
 	day_of_week_t	(*Get_Day_Of_Week)(void);
 	date_t 			(*Get_Date)(void);
 	month_t 		(*Get_Month)(void);
@@ -62,7 +63,8 @@ Clock_Driver_t *get_clock_driver();
 
 void Clock_Get_Seconds_Complete_Callback(Clock_Device_t *clock_dev);
 void Clock_Get_Minutes_Complete_Callback(Clock_Device_t *clock_dev);
-void Clock_Set_Seconds_Comlpete_Callback(Clock_Device_t *clock_dev);
+void Clock_Set_Seconds_Complete_Callback(Clock_Device_t *clock_dev);
+void Clock_Get_Hours_Complete_Callback(Clock_Device_t *clock_dev);
 
 #ifdef DS3231
 #	include "ds3231_rtc_driver.h"

@@ -16,23 +16,23 @@
 #endif
 
 
+Clock_Driver_t 			*app_clock_driver;
+Display_Driver_t		*app_display_driver;
+
+Clock_Device_t 			ds3231_dev = {
+		.seconds = 0,
+		.minutes = 0,
+		.ctrl_stage = CLOCK_CTRL_INIT,
+};
+Display_Device_t		lcd1602a_dev = {
+		.ctrl_stage = DISPLAY_CTRL_INIT,
+};
+
 int main(void)
 {
-	Clock_Driver_t 			*app_clock_driver = get_clock_driver();
-	Clock_Device_t 			ds3231_dev = {
-			.seconds = 0,
-			.minutes = 0,
-			.hours = 0,
-			.ctrl_stage = CLOCK_CTRL_INIT,
-	};
-
+	app_clock_driver = get_clock_driver();
+	app_display_driver = get_display_driver();
 	app_clock_driver->Initialize(ds3231_dev);
-	app_clock_driver->Set_Seconds_IT(22);
-
-	Display_Driver_t		*app_display_driver = get_display_driver();
-	Display_Device_t		lcd1602a_dev = {
-			.ctrl_stage = DISPLAY_CTRL_INIT,
-	};
 	app_display_driver->Display_Initialize(lcd1602a_dev);
 
 	full_date_t date = {
@@ -57,26 +57,33 @@ int main(void)
 			.time = time
 	};
 	app_clock_driver->Set_Full_Datetime(datetime);
+	datetime = app_clock_driver->Get_Full_Datetime();
+	app_display_driver->Display_Update_Datetime(datetime);
 	for(;;)
 	{
-		datetime = app_clock_driver->Get_Full_Datetime();
-		app_display_driver->Display_Update_Datetime(datetime);
+		app_clock_driver->Get_Seconds_IT();
+		//app_clock_driver->Get_Minutes_IT();
+		//app_clock_driver->Get_Hours_IT();
 		delay();
 	}
 }
 
 void Clock_Get_Seconds_Complete_Callback(Clock_Device_t *clock_dev)
 {
-	// this is probably where i should update my display right?
-	printf("Current Seconds: %u\n", (unsigned int) clock_dev->seconds);
+	app_display_driver->Display_Update_Seconds(clock_dev->seconds);
 }
 
 void Clock_Get_Minutes_Complete_Callback(Clock_Device_t *clock_dev)
 {
-	printf("Current Minutes: %u\n", (unsigned int) clock_dev->minutes);
+	app_display_driver->Display_Update_Minutes(clock_dev->minutes);
 }
 
-void Clock_Set_Seconds_Comlpete_Callback(Clock_Device_t *clock_dev)
+void Clock_Get_Hours_Complete_Callback(Clock_Device_t *clock_dev)
+{
+	app_display_driver->Display_Update_Hours(clock_dev->hours);
+}
+
+void Clock_Set_Seconds_Complete_Callback(Clock_Device_t *clock_dev)
 {
 	printf("Seconds Set: %u\n", (unsigned int) clock_dev->seconds);
 }

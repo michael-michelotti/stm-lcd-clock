@@ -35,8 +35,9 @@ static void I2C_Set_Own_Address(I2C_Handle_t *p_i2c_handle);
 
 /*************** LOCAL I2C DRIVER VARIABLES START *****************/
 static I2C_Handle_t p_i2c_handle;
-static uint8_t p_tx_ring_buffer[255];
-static uint8_t p_rx_ring_buffer[255];
+
+static uint8_t p_tx_ring_buffer[TX_RING_BUFFER_SIZE];
+static uint8_t p_rx_ring_buffer[RX_RING_BUFFER_SIZE];
 
 static const I2C_Interface_t i2c_driver = {
 		.Initialize 		= I2C_Init,
@@ -62,7 +63,11 @@ static void I2C_Init()
 			.clock_speed = I2C_SPEED_SM,
 			.own_address = I2C_OWN_ADDR,
 			.p_tx_buffer = p_tx_ring_buffer,
+			.tx_ring_buffer_write_ptr = 0,
+			.tx_ring_buffer_read_ptr = 0,
 			.p_rx_buffer = p_rx_ring_buffer,
+			.rx_ring_buffer_write_ptr = 0,
+			.rx_ring_buffer_read_ptr = 0,
 			.tx_len = 0,
 			.rx_len = 0,
 			.rx_size = 0,
@@ -151,13 +156,7 @@ static void I2C_Master_Send_IT(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave
 		p_i2c_handle.p_i2c_x->CR2 |= ( 1 << I2C_CR2_ITEVTEN_POS );
 
 		// fill the i2c ring buffer with the data to be sent
-		uint8_t *curr_ring_buffer_pos = p_i2c_handle.i2c_dev.p_tx_buffer;
-		for (int i = 0; i < len; i++)
-		{
-			*curr_ring_buffer_pos = *p_tx_buffer;
-			curr_ring_buffer_pos++;
-			p_tx_buffer++;
-		}
+		I2C_TX_Ring_Buffer_Write(&p_i2c_handle.i2c_dev, p_tx_buffer, len);
 		p_i2c_handle.i2c_dev.tx_len = len;
 		p_i2c_handle.i2c_dev.slave_addr = slave_addr;
 		p_i2c_handle.i2c_dev.repeat_start = repeat_start;
@@ -325,20 +324,19 @@ static void I2C_Handle_TXE()
 	}
 
 	// DR is empty, shift register may or may not be empty. Either way, write next byte into DR
-	p_i2c_handle.p_i2c_x->DR = *p_i2c_handle.i2c_dev.p_tx_buffer;
-	p_i2c_handle.i2c_dev.p_tx_buffer++;
+	p_i2c_handle.p_i2c_x->DR = *I2C_TX_Ring_Buffer_Read(&p_i2c_handle.i2c_dev, 1);
 	p_i2c_handle.i2c_dev.tx_len--;
 }
 
 static void I2C_Handle_RXNE(void)
 {
+	uint8_t temp;
+
 	if (p_i2c_handle.i2c_dev.rx_size == 1)
 	{
 		// NACK must be sent on first byte for one byte receive
-		//I2C_Ack_Control(p_i2c_handle.p_i2c_x, DISABLE);
-		//I2C_Generate_Stop_Condition(&p_i2c_handle);
-		*p_i2c_handle.i2c_dev.p_rx_buffer = p_i2c_handle.p_i2c_x->DR;
-		p_i2c_handle.i2c_dev.p_rx_buffer++;
+		temp = p_i2c_handle.p_i2c_x->DR;
+		I2C_RX_Ring_Buffer_Write(&p_i2c_handle.i2c_dev, &temp, 1);
 		p_i2c_handle.i2c_dev.rx_len--;
 	}
 	else
@@ -348,8 +346,8 @@ static void I2C_Handle_RXNE(void)
 			// last byte when len = 1 must be NACK'd, so ACK must be disabled when len = 2
 			I2C_Ack_Control(p_i2c_handle.p_i2c_x, DISABLE);
 		}
-		*p_i2c_handle.i2c_dev.p_rx_buffer = p_i2c_handle.p_i2c_x->DR;
-		p_i2c_handle.i2c_dev.p_rx_buffer++;
+		temp = p_i2c_handle.p_i2c_x->DR;
+		I2C_RX_Ring_Buffer_Write(&p_i2c_handle.i2c_dev, &temp, 1);
 		p_i2c_handle.i2c_dev.rx_len--;
 	}
 

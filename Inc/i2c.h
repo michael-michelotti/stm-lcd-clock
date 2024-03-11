@@ -2,6 +2,7 @@
 #define I2C_H_
 
 #include <stdint.h>
+#include <stdlib.h>
 
 typedef enum
 {
@@ -39,7 +40,11 @@ typedef struct
 	uint32_t						clock_speed;
 	uint8_t							own_address;
 	uint8_t							*p_tx_buffer;
+	uint8_t							tx_ring_buffer_write_ptr;
+	uint8_t 						tx_ring_buffer_read_ptr;
 	uint8_t							*p_rx_buffer;
+	uint8_t							rx_ring_buffer_write_ptr;
+	uint8_t							rx_ring_buffer_read_ptr;
 	uint32_t						tx_len;
 	uint32_t						rx_len;
 	uint32_t						rx_size;
@@ -49,8 +54,16 @@ typedef struct
 	uint8_t							ack_ctrl;
 } I2C_Device_t;
 
+#define TX_RING_BUFFER_SIZE 		256
+#define RX_RING_BUFFER_SIZE 		256
+
 void I2C_Write_Complete_Callback(I2C_Device_t *p_i2c_dev);
 void I2C_Read_Complete_Callback(I2C_Device_t *p_i2c_dev);
+uint8_t *I2C_RX_Ring_Buffer_Read(I2C_Device_t *p_i2c_dev, size_t num_bytes);
+void I2C_RX_Ring_Buffer_Write(I2C_Device_t *p_i2c_dev, uint8_t *p_src, size_t num_bytes);
+uint8_t *I2C_TX_Ring_Buffer_Read(I2C_Device_t *p_i2c_dev, size_t num_bytes);
+void I2C_TX_Ring_Buffer_Write(I2C_Device_t *p_i2c_dev, uint8_t *p_src, size_t num_bytes);
+void I2C_Error_Handler();
 
 I2C_Interface_t *get_i2c_interface();
 

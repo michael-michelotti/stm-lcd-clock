@@ -28,6 +28,11 @@ __weak void Clock_Get_Day_Of_Week_Complete_Callback(Clock_Device_t *clock_dev)
 	// implemented in application code
 }
 
+__weak void Clock_Get_Date_Complete_Callback(Clock_Device_t *clock_dev)
+{
+	// implemented in application code
+}
+
 __weak void Clock_Get_Full_Time_Complete_Callback(Clock_Device_t *clock_dev)
 {
 	// implemented in application code

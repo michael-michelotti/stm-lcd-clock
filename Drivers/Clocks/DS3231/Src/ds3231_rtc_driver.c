@@ -80,9 +80,9 @@ static uint8_t Convert_Day_To_DS3231(day_of_week_t day);
 static uint8_t Convert_Date_To_DS3231(date_t date);
 static uint8_t Convert_Month_Century_To_DS3231(month_t month, century_t century);
 static uint8_t Convert_Year_To_DS3231(year_t year);
-static uint8_t *Convert_Time_To_DS3231(full_time_t full_time);
-static uint8_t *Convert_Full_Date_To_DS3231(full_date_t full_date);
-static uint8_t *Convert_Dateime_To_DS3231(full_datetime_t datetime);
+static void Convert_Full_Time_To_DS3231(full_time_t full_time, uint8_t *p_tx_buffer);
+static void Convert_Full_Date_To_DS3231(full_date_t full_date, uint8_t *p_tx_buffer);
+static void Convert_Datetime_To_DS3231(full_datetime_t datetime, uint8_t *p_tx_buffer);
 
 /*************** GENERAL UTILITY FUNCTIONS *****************/
 static void DS3231_Convert_Hour_Format(I2C_Handle_t *p_i2c_handle, hour_format_t new_mode);
@@ -736,10 +736,7 @@ static void DS3231_Set_Full_Date_IT(full_date_t full_date)
 {
 	uint8_t p_tx_buffer[DS3231_LEN_FULL_DATE + 1];
 	p_tx_buffer[0] = DS3231_ADDR_DAY;
-	p_tx_buffer[1] = Convert_Day_To_DS3231(full_date.day_of_week);
-	p_tx_buffer[2] = Convert_Date_To_DS3231(full_date.date);
-	p_tx_buffer[3] = Convert_Month_Century_To_DS3231(full_date.month, full_date.century);
-	p_tx_buffer[4] = Convert_Year_To_DS3231(full_date.year);
+	Convert_Full_Date_To_DS3231(full_date, p_tx_buffer + 1);
 	Write_To_DS3231_IT(p_tx_buffer, DS3231_UNIT_FULL_DATE, DS3231_LEN_FULL_DATE + 1);
 }
 
@@ -747,9 +744,7 @@ static void DS3231_Set_Full_Time_IT(full_time_t full_time)
 {
 	uint8_t p_tx_buffer[DS3231_LEN_FULL_TIME + 1];
 	p_tx_buffer[0] = DS3231_ADDR_SECONDS;
-	p_tx_buffer[1] = Convert_Seconds_To_DS3231(full_time.seconds);
-	p_tx_buffer[2] = Convert_Minutes_To_DS3231(full_time.minutes);
-	p_tx_buffer[3] = Convert_Hours_To_DS3231(full_time.hours);
+	Convert_Full_Time_To_DS3231(full_time, p_tx_buffer + 1);
 	Write_To_DS3231_IT(p_tx_buffer, DS3231_UNIT_FULL_TIME, DS3231_LEN_FULL_TIME + 1);
 }
 
@@ -757,13 +752,7 @@ static void DS3231_Set_Full_Datetime_IT(full_datetime_t full_datetime)
 {
 	uint8_t p_tx_buffer[DS3231_LEN_DATETIME + 1];
 	p_tx_buffer[0] = DS3231_ADDR_SECONDS;
-	p_tx_buffer[1] = Convert_Seconds_To_DS3231(full_datetime.time.seconds);
-	p_tx_buffer[2] = Convert_Minutes_To_DS3231(full_datetime.time.minutes);
-	p_tx_buffer[3] = Convert_Hours_To_DS3231(full_datetime.time.hours);
-	p_tx_buffer[4] = Convert_Day_To_DS3231(full_datetime.date.day_of_week);
-	p_tx_buffer[5] = Convert_Date_To_DS3231(full_datetime.date.date);
-	p_tx_buffer[6] = Convert_Month_Century_To_DS3231(full_datetime.date.month, full_datetime.date.century);
-	p_tx_buffer[7] = Convert_Year_To_DS3231(full_datetime.date.year);
+	Convert_Datetime_To_DS3231(full_datetime, p_tx_buffer + 1);
 	Write_To_DS3231_IT(p_tx_buffer, DS3231_UNIT_DATETIME, DS3231_LEN_DATETIME + 1);
 }
 
@@ -959,36 +948,25 @@ static uint8_t Convert_Year_To_DS3231(year_t year)
 	return Convert_Binary_To_BCD(year);
 }
 
-static uint8_t *Convert_Time_To_DS3231(full_time_t full_time)
+static void Convert_Full_Time_To_DS3231(full_time_t full_time, uint8_t *p_tx_buffer)
 {
-	uint8_t *p_ds3231_time_registers = malloc((DS3231_LEN_FULL_TIME + 1) * sizeof(uint8_t));
-	p_ds3231_time_registers[1] = Convert_Seconds_To_DS3231(full_time.seconds);
-	p_ds3231_time_registers[2] = Convert_Minutes_To_DS3231(full_time.minutes);
-	p_ds3231_time_registers[3] = Convert_Hours_To_DS3231(full_time.hours);
-	return p_ds3231_time_registers;
+	p_tx_buffer[0] = Convert_Seconds_To_DS3231(full_time.seconds);
+	p_tx_buffer[1] = Convert_Minutes_To_DS3231(full_time.minutes);
+	p_tx_buffer[2] = Convert_Hours_To_DS3231(full_time.hours);
 }
 
-static uint8_t *Convert_Full_Date_To_DS3231(full_date_t full_date)
+static void Convert_Full_Date_To_DS3231(full_date_t full_date, uint8_t *p_tx_buffer)
 {
-	uint8_t *p_ds3231_time_registers = malloc((DS3231_LEN_FULL_DATE + 1) * sizeof(uint8_t));
-	p_ds3231_time_registers[1] = Convert_Day_To_DS3231(full_date.day_of_week);
-	p_ds3231_time_registers[2] = Convert_Date_To_DS3231(full_date.date);
-	p_ds3231_time_registers[3] = Convert_Month_To_DS3231(full_date.month);
-	p_ds3231_time_registers[4] = Convert_Year_To_DS3231(full_date.year);
-	return p_ds3231_time_registers;
+	p_tx_buffer[0] = Convert_Day_To_DS3231(full_date.day_of_week);
+	p_tx_buffer[1] = Convert_Date_To_DS3231(full_date.date);
+	p_tx_buffer[2] = Convert_Month_Century_To_DS3231(full_date.month, full_date.century);
+	p_tx_buffer[3] = Convert_Year_To_DS3231(full_date.year);
 }
 
-static uint8_t *Convert_Dateime_To_DS3231(full_datetime_t datetime)
+static void Convert_Datetime_To_DS3231(full_datetime_t datetime, uint8_t *p_tx_buffer)
 {
-	uint8_t *p_ds3231_time_registers = malloc((DS3231_LEN_DATETIME + 1) * sizeof(uint8_t));
-	p_ds3231_time_registers[1] = Convert_Seconds_To_DS3231(datetime.time.seconds);
-	p_ds3231_time_registers[2] = Convert_Minutes_To_DS3231(datetime.time.minutes);
-	p_ds3231_time_registers[3] = Convert_Hours_To_DS3231(datetime.time.hours);
-	p_ds3231_time_registers[4] = Convert_Day_To_DS3231(datetime.date.day_of_week);
-	p_ds3231_time_registers[5] = Convert_Date_To_DS3231(datetime.date.date);
-	p_ds3231_time_registers[6] = Convert_Month_To_DS3231(datetime.date.month);
-	p_ds3231_time_registers[7] = Convert_Year_To_DS3231(datetime.date.year);
-	return p_ds3231_time_registers;
+	Convert_Full_Time_To_DS3231(datetime.time, p_tx_buffer);
+	Convert_Full_Date_To_DS3231(datetime.date, p_tx_buffer + DS3231_LEN_FULL_TIME);
 }
 
 /*************** GENERAL UTILITY FUNCTIONS *****************/

@@ -1,9 +1,9 @@
-#include "lcd1602a_display_driver.h"
-
-#include <stdlib.h>
 #include <string.h>
 
-static void LCD1602A_Initialize(Display_Device_t lcd1602a_dev);
+#include "lcd1602a_display_driver.h"
+
+
+static void LCD1602A_Initialize(Display_Device_t *lcd1602a_dev);
 static void LCD1602A_On(void);
 static void LCD1602A_Off(void);
 static void LCD1602A_Clear(void);
@@ -26,10 +26,10 @@ static void LCD1602A_Update_Buffer_Year(year_t year, century_t century);
 static void LCD1602A_Update_Full_Date(full_date_t full_date);
 static void LCD1602A_Update_Buffer_Full_Date(full_date_t full_date);
 static void LCD1602A_Update_Datetime(full_datetime_t datetime);
-
 static void LCD1602A_Set_Cursor(uint8_t row, uint8_t column);
 static void LCD1602A_Display_Char(char ch);
 static void LCD1602A_Display_Str(char *str, size_t num_chars);
+
 static char int_to_ascii_char(uint8_t int_to_covert);
 static void int_to_zero_padded_ascii(char *result, uint8_t int_to_convert);
 static void write_char(char ch);
@@ -73,7 +73,7 @@ Display_Driver_t *get_display_driver()
 	return &lcd1602_display_driver;
 }
 
-static void LCD1602A_Initialize(Display_Device_t lcd1602a_dev)
+static void LCD1602A_Initialize(Display_Device_t *lcd1602a_dev)
 {
 	// Register select pin
 	GPIO_Pin_Config_t pin_conf = { RS_GPIO_PIN, GPIO_MODE_OUT, GPIO_SPEED_HIGH, GPIO_PUPD_NONE, GPIO_OUT_PP, 0 };
@@ -507,42 +507,42 @@ static void return_home()
 
 static void entry_mode_set(uint8_t inc_dec, uint8_t shift)
 {
-	uint8_t cmd_byte = 0x04;
+	uint8_t cmd_byte = ENTRY_MODE_SET;
 	cmd_byte |= (inc_dec << 1) + (shift << 0);
 	write_command(cmd_byte, LCD_TAS_US);
 }
 
 static void display_on_off(uint8_t disp, uint8_t cursor, uint8_t blink)
 {
-	uint8_t cmd_byte = 0x08;
+	uint8_t cmd_byte = DISPLAY_ON_OFF_CTRL;
 	cmd_byte |= (disp << 2) + (cursor << 1) + (blink << 0);
 	write_command(cmd_byte, LCD_TAS_US);
 }
 
 static void cursor_display_shift(uint8_t shift_or_cursor, uint8_t right_left)
 {
-	uint8_t cmd_byte = 0x10;
+	uint8_t cmd_byte = CURSOR_DISPLAY_SHIFT;
 	cmd_byte |= (shift_or_cursor << 3) + (right_left << 2);
 	write_command(cmd_byte, LCD_TAS_US);
 }
 
 static void function_set(uint8_t bit_len, uint8_t num_lines, uint8_t font)
 {
-	uint8_t cmd_byte = 0x20;
+	uint8_t cmd_byte = FUNCTION_SET;
 	cmd_byte |= (bit_len << 4) + (num_lines << 3) + (font << 2);
 	write_command(cmd_byte, LCD_TAS_US);
 }
 
 static void set_cgram_addr(uint8_t cgram_addr)
 {
-	uint8_t cmd_byte = 0x40;
+	uint8_t cmd_byte = SET_CGRAM_ADDR;
 	cmd_byte |= (cgram_addr & 0x3F);
 	write_command(cmd_byte, LCD_TAS_US);
 }
 
 static void set_ddram_addr(uint8_t ddram_addr)
 {
-	uint8_t cmd_byte = 0x80;
+	uint8_t cmd_byte = SET_DDRAM_ADDR;
 	cmd_byte |= (ddram_addr & 0x7F);
 	write_command(cmd_byte, LCD_TAS_US);
 }

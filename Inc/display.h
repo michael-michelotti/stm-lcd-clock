@@ -21,7 +21,7 @@ typedef struct
 
 typedef struct
 {
-	void			(*Display_Initialize)(Display_Device_t);
+	void			(*Display_Initialize)(Display_Device_t *);
 	void			(*Display_On)(void);
 	void			(*Display_Off)(void);
 	void			(*Display_Clear)(void);

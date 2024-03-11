@@ -34,24 +34,24 @@ int main(void)
 	app_clock_driver->Initialize(&ds3231_dev);
 	ds3231_dev.ctrl_stage = CLOCK_CTRL_IDLE;
 
-	app_display_driver->Display_Initialize(lcd1602a_dev);
+	app_display_driver->Display_Initialize(&lcd1602a_dev);
 
 	hours_t hours = {
 			.am_pm = AM_PM_PM,
-			.hour = 2,
+			.hour = 11,
 			.hour_format = HOUR_FORMAT_12_HOUR
 	};
 	full_date_t date = {
-			.date = 11,
-			.day_of_week = DAY_OF_WEEK_MON,
-			.month = MONTH_MAR,
+			.date = 31,
+			.day_of_week = DAY_OF_WEEK_TUE,
+			.month = MONTH_DEC,
 			.year = 24,
 			.century = CENTURY_21ST
 	};
 	full_time_t time = {
 			.hours = hours,
-			.minutes = 12,
-			.seconds = 17
+			.minutes = 59,
+			.seconds = 40
 	};
 	ds3231_dev.date = date;
 	ds3231_dev.time = time;

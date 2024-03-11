@@ -1,68 +1,69 @@
 #include "stm32f407xx_gpio_driver.h"
 
-/*************** PRIVATE UTILITY FUNCTION DECLARATIONS*****************/
+/* Private utility function declarations */
 static void GPIO_Configure_Mode(GPIO_Handle_t *p_gpio_handle);
 static void GPIO_EXTI_Rising_Falling_Config(uint8_t gpio_pin_num, uint8_t enable, uint8_t rise_or_fall);
 static uint8_t GPIO_EXTI_Base_Addr_To_Code(GPIO_Register_Map_t *p_gpio_base_addr);
 static void GPIO_EXTI_Config(GPIO_Handle_t *p_gpio_handle);
 static void GPIO_Configure_Alternate_Function(GPIO_Handle_t *p_gpio_handle);
 
-/* READ FUNCTIONALITY */
 void GPIO_Init(GPIO_Handle_t *p_gpio_handle)
 {
-	// enable the clock for your given register
+	/* Enable the clock for proper GPIO controller */
 	GPIO_Peri_Clk_Ctrl(p_gpio_handle->p_gpio_x, ENABLE);
 
-	// 1. Configure pin mode
+	/* 1. Configure pin mode */
 	if (p_gpio_handle->gpio_pin_config.gpio_pin_mode <= GPIO_MODE_ANALOG)
 	{
 		GPIO_Configure_Mode(p_gpio_handle);
 	}
-	else	// pin must be in interrupt mode
+	else  /* Pin is in interrupt mode */
 	{
 		if (p_gpio_handle->gpio_pin_config.gpio_pin_mode == GPIO_MODE_IN_FE)
 		{
-			// enable falling, disable rising trigger
+			/* Enable trigger on falling, disable on rising */
 			GPIO_EXTI_Rising_Falling_Config(p_gpio_handle->gpio_pin_config.gpio_pin_num, ENABLE, FALLING);
 			GPIO_EXTI_Rising_Falling_Config(p_gpio_handle->gpio_pin_config.gpio_pin_num, DISABLE, RISING);
 		}
 		else if (p_gpio_handle->gpio_pin_config.gpio_pin_mode == GPIO_MODE_IN_RE)
 		{
-			// enable rising, disable falling trigger
+			/* Enable rising, disable falling */
 			GPIO_EXTI_Rising_Falling_Config(p_gpio_handle->gpio_pin_config.gpio_pin_num, DISABLE, FALLING);
 			GPIO_EXTI_Rising_Falling_Config(p_gpio_handle->gpio_pin_config.gpio_pin_num, ENABLE, RISING);
 		}
 		else if (p_gpio_handle->gpio_pin_config.gpio_pin_mode == GPIO_MODE_IN_RFT)
 		{
+			/* Enable both rising and falling */
 			GPIO_EXTI_Rising_Falling_Config(p_gpio_handle->gpio_pin_config.gpio_pin_num, ENABLE, FALLING);
 			GPIO_EXTI_Rising_Falling_Config(p_gpio_handle->gpio_pin_config.gpio_pin_num, ENABLE, RISING);
 		}
 
 		GPIO_EXTI_Config(p_gpio_handle);
-		// unmask interrupts for desired input line
+
+		/* Un-mask interrupts for desired input line */
 		SET_BIT(EXTI->IMR, (1 << p_gpio_handle->gpio_pin_config.gpio_pin_num));
 	}
 
 	uint32_t gpio_register_mask = 0b11 << (2 * p_gpio_handle->gpio_pin_config.gpio_pin_num);
 
-	// 2. Configure speed
+	/* 2. Configure pin slew speed */
 	SET_FIELD(&p_gpio_handle->p_gpio_x->OSPEEDR, gpio_register_mask, p_gpio_handle->gpio_pin_config.gpio_pin_speed);
 
-	// 3. Configure PU PD settings
+	/* 3. Configure pull-up, pull-down */
 	SET_FIELD(&p_gpio_handle->p_gpio_x->PUPDR, gpio_register_mask, p_gpio_handle->gpio_pin_config.gpio_pin_pu_pd_ctrl);
 
 	gpio_register_mask = 0b1 << (p_gpio_handle->gpio_pin_config.gpio_pin_num);
-	// 4. Configure output type
+	/* 4. Configure output type */
 	SET_FIELD(&p_gpio_handle->p_gpio_x->OTYPER, gpio_register_mask, p_gpio_handle->gpio_pin_config.gpio_pin_op_type);
 
-	// 5. Configure alternate functionality
+	/* 5. Configure alternate functionality */
 	if (p_gpio_handle->gpio_pin_config.gpio_pin_mode == GPIO_MODE_ALT)
 		GPIO_Configure_Alternate_Function(p_gpio_handle);
 }
 
 void GPIO_Cleanup(GPIO_Register_Map_t *p_gpio_x)
 {
-	switch ((uint32_t)p_gpio_x)
+	switch ((uint32_t) p_gpio_x)
 	{
 	case GPIOA_BASE_ADDR:
 		GPIOA_RESET();
@@ -97,7 +98,7 @@ void GPIO_Peri_Clk_Ctrl(GPIO_Register_Map_t *p_gpio_x, uint8_t enable)
 {
 	if (enable == ENABLE)
 	{
-		switch ((uint32_t)p_gpio_x)
+		switch ((uint32_t) p_gpio_x)
 		{
 		case GPIOA_BASE_ADDR:
 			GPIOA_PCLK_EN();
@@ -129,7 +130,7 @@ void GPIO_Peri_Clk_Ctrl(GPIO_Register_Map_t *p_gpio_x, uint8_t enable)
 	}
 	else
 	{
-		switch ((uint32_t)p_gpio_x)
+		switch ((uint32_t) p_gpio_x)
 		{
 		case GPIOA_BASE_ADDR:
 			GPIOA_PCLK_DI();
@@ -161,6 +162,7 @@ void GPIO_Peri_Clk_Ctrl(GPIO_Register_Map_t *p_gpio_x, uint8_t enable)
 	}
 }
 
+/* Functions for reading GPIO values */
 uint8_t GPIO_Read_From_Input_Pin(GPIO_Register_Map_t *p_gpio_x, uint8_t pin_num)
 {
 	return GET_BIT(p_gpio_x->IDR, (pin_num << 0x1));
@@ -171,7 +173,7 @@ uint16_t GPIO_Read_From_Input_Port(GPIO_Register_Map_t *p_gpio_x)
 	return (uint16_t) (p_gpio_x->IDR);
 }
 
-/* WRITE FUNCTIONALITY */
+/* Functions for writing values to GPIOs */
 void GPIO_Write_To_Output_Pin(GPIO_Register_Map_t *p_gpio_x, uint8_t pin_num, uint8_t value)
 {
 	if (value == SET)
@@ -194,12 +196,11 @@ void GPIO_Toggle_Pin(GPIO_Register_Map_t *p_gpio_x, uint8_t pin_num)
 	p_gpio_x->ODR ^= (1 << pin_num);
 }
 
-/* INTERRUPT MANAGEMENT */
+/* Interrupt Configuration */
 void GPIO_IRQ_Interrupt_Config(uint8_t irq_num, uint8_t enable)
 {
 	uint8_t adjusted_irq_num = irq_num % 32;
 
-	// INTERRUPT BEING ENABLED
 	if (enable == ENABLE)
 	{
 		if (irq_num <= 31)
@@ -209,7 +210,6 @@ void GPIO_IRQ_Interrupt_Config(uint8_t irq_num, uint8_t enable)
 		else if (irq_num >= 64 && irq_num < 96)
 			*NVIC_ISER_2 |= (1 << adjusted_irq_num);
 	}
-	// INTERRUPT BEING DISABLED
 	else
 	{
 		if (irq_num <= 31)
@@ -226,27 +226,24 @@ void GPIO_IRQ_Priority_Config(uint8_t irq_num, uint32_t irq_prio)
 	uint8_t ipr_num = irq_num / 4;
 	uint8_t ipr_offset = irq_num % 4;
 
-	// clear the current priority
+	/* Clear the current priority */
 	*(NVIC_IPR_0 + ipr_num) &= ~(0b1111 << ((ipr_offset * 8) + (8-NO_PRIORITY_BITS_IMPLEMENTED)));
-	// set the new priority
+	/* Set the new priority */
 	*(NVIC_IPR_0 + ipr_num) |= (irq_prio << ((ipr_offset * 8) + (8-NO_PRIORITY_BITS_IMPLEMENTED)));
-
 }
 
 void GPIO_IRQ_Handler(uint8_t pin_num)
 {
-	// clear the exti pending register corresponding to pin number
+	/* Clear the EXTI pending register corresponding to pin number */
 	if (GET_BIT(EXTI->PR, (1 << pin_num)))
 	{
-		// clear the bit
 		CLEAR_BIT(EXTI->PR, (1 << pin_num));
 	}
 }
 
-/*************** PRIVATE UTILITY FUNCTIONS *****************/
+/* Private Utility Functions */
 static void GPIO_Configure_Mode(GPIO_Handle_t *p_gpio_handle)
 {
-	// clear mode bits for proper GPIO pin
 	uint32_t moder_mask = 0b11 << (2 * p_gpio_handle->gpio_pin_config.gpio_pin_num);
 	SET_FIELD(&p_gpio_handle->p_gpio_x->MODER, moder_mask, p_gpio_handle->gpio_pin_config.gpio_pin_mode);
 }
@@ -298,7 +295,7 @@ static uint8_t GPIO_EXTI_Base_Addr_To_Code(GPIO_Register_Map_t *p_gpio_base_addr
 
 static void GPIO_EXTI_Config(GPIO_Handle_t *p_gpio_handle)
 {
-	// give control of exti line to proper gpio a..i
+	/* Give control of EXTI line to proper GPIO A through I */
 	uint8_t exti_reg_num = p_gpio_handle->gpio_pin_config.gpio_pin_num / 4;
 	uint8_t exti_bit_offset = (p_gpio_handle->gpio_pin_config.gpio_pin_num % 4) * 4;
 	uint8_t port_code = GPIO_EXTI_Base_Addr_To_Code(p_gpio_handle->p_gpio_x);
@@ -313,8 +310,8 @@ static void GPIO_Configure_Alternate_Function(GPIO_Handle_t *p_gpio_handle)
 	uint8_t shift_amount = 0;
 	uint32_t afr_field_mask;
 
-	// depending on whether the pin number is greater than or less than 8, i have to assign the alternate
-	// function using either the alternate function high or alternate function low registers
+	/* Depending on whether the pin number is greater than or less than 8, assign the alternate
+	function using either the alternate function high or alternate function low registers */
 	high_or_low = p_gpio_handle->gpio_pin_config.gpio_pin_num / 8;
 	shift_amount = p_gpio_handle->gpio_pin_config.gpio_pin_num % 8;
 	afr_field_mask = 0b1111 << (shift_amount * 4);

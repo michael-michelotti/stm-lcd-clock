@@ -9,7 +9,7 @@ static void I2C_Init();
 static void I2C_Master_Send(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t repeat_start);
 static void I2C_Master_Send_IT(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t repeat_start);
 static void I2C_Master_Receive(uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr , uint8_t repeat_start);
-static void I2C_Master_Receive_IT(uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr , uint8_t repeat_start);
+static void I2C_Master_Receive_IT(uint32_t len, uint8_t slave_addr , uint8_t repeat_start);
 static void I2C_Cleanup();
 
 static void I2C_Handle_SB();
@@ -218,7 +218,7 @@ static void I2C_Master_Receive(uint8_t *p_rx_buffer, uint32_t len, uint8_t slave
 	}
 }
 
-static void I2C_Master_Receive_IT(uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr , uint8_t repeat_start)
+static void I2C_Master_Receive_IT(uint32_t len, uint8_t slave_addr , uint8_t repeat_start)
 {
 	if (p_i2c_handle.i2c_dev.control_stage == I2C_CTRL_IDLE)
 	{
@@ -359,6 +359,7 @@ static void I2C_Handle_RXNE(void)
 		}
 		p_i2c_handle.p_i2c_x->CR2 &= ~( 1 << I2C_CR2_ITBUFEN_POS );
 		p_i2c_handle.p_i2c_x->CR2 &= ~( 1 << I2C_CR2_ITEVTEN_POS );
+		I2C_Ack_Control(p_i2c_handle.p_i2c_x, ENABLE);
 		p_i2c_handle.i2c_dev.control_stage = I2C_CTRL_IDLE;
 		I2C_Read_Complete_Callback(&p_i2c_handle.i2c_dev);
 	}

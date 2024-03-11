@@ -22,3 +22,8 @@ __weak void Clock_Get_Hours_Complete_Callback(Clock_Device_t *clock_dev)
 {
 	// implemented in application code
 }
+
+__weak void Clock_Get_Full_Time_Complete_Callback(Clock_Device_t *clock_dev)
+{
+	// implemented in application code
+}

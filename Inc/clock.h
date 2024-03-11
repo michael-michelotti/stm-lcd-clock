@@ -44,6 +44,7 @@ typedef struct
 	century_t		(*Get_Century)(void);
 	full_date_t		(*Get_Full_Date)(void);
 	full_time_t		(*Get_Full_Time)(void);
+	void			(*Get_Full_Time_IT)(void);
 	full_datetime_t (*Get_Full_Datetime)(void);
 
 	void 			(*Set_Seconds)(seconds_t secs);
@@ -65,6 +66,7 @@ void Clock_Get_Seconds_Complete_Callback(Clock_Device_t *clock_dev);
 void Clock_Get_Minutes_Complete_Callback(Clock_Device_t *clock_dev);
 void Clock_Set_Seconds_Complete_Callback(Clock_Device_t *clock_dev);
 void Clock_Get_Hours_Complete_Callback(Clock_Device_t *clock_dev);
+void Clock_Get_Full_Time_Complete_Callback(Clock_Device_t *clock_dev);
 
 #ifdef DS3231
 #	include "ds3231_rtc_driver.h"

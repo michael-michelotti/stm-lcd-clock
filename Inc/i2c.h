@@ -29,7 +29,7 @@ typedef struct
 {
 	void							(*Initialize)();
 	void 							(*Read_Bytes)(uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr, uint8_t repeat_start);
-	void							(*Read_Bytes_IT)(uint8_t *p_rx_buffer, uint32_t len, uint8_t slave_addr, uint8_t repeat_start);
+	void							(*Read_Bytes_IT)(uint32_t len, uint8_t slave_addr, uint8_t repeat_start);
 	void	 						(*Write_Bytes)(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t repeat_start);
 	void	 						(*Write_Bytes_IT)(uint8_t *p_tx_buffer, uint32_t len, uint8_t slave_addr, uint8_t repeat_start);
 	void	 						(*Deinitialize)();

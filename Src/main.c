@@ -61,9 +61,7 @@ int main(void)
 	app_display_driver->Display_Update_Datetime(datetime);
 	for(;;)
 	{
-		app_clock_driver->Get_Seconds_IT();
-		//app_clock_driver->Get_Minutes_IT();
-		//app_clock_driver->Get_Hours_IT();
+		app_clock_driver->Get_Full_Time_IT();
 		delay();
 	}
 }
@@ -83,7 +81,18 @@ void Clock_Get_Hours_Complete_Callback(Clock_Device_t *clock_dev)
 	app_display_driver->Display_Update_Hours(clock_dev->hours);
 }
 
+void Clock_Get_Full_Time_Complete_Callback(Clock_Device_t *clock_dev)
+{
+	full_time_t full_time = {
+			.hours = clock_dev->hours,
+			.minutes = clock_dev->minutes,
+			.seconds = clock_dev->seconds
+	};
+	app_display_driver->Display_Update_Time(full_time);
+}
+
 void Clock_Set_Seconds_Complete_Callback(Clock_Device_t *clock_dev)
 {
 	printf("Seconds Set: %u\n", (unsigned int) clock_dev->seconds);
 }
+

@@ -5,7 +5,7 @@
 
 
 /*************** BLOCKING GETTER FUNCTIONS *****************/
-static void DS3231_Initialize(Clock_Device_t ds3231_dev);
+static void DS3231_Initialize(Clock_Device_t *ds3231_dev);
 static seconds_t DS3231_Get_Seconds(void);
 static minutes_t DS3231_Get_Minutes(void);
 static hours_t DS3231_Get_Hours(void);
@@ -39,6 +39,7 @@ static void DS3231_Set_Hours(hours_t hours);
 static void DS3231_Set_Day_Of_Week(day_of_week_t dow);
 static void DS3231_Set_Date(date_t date);
 static void DS3231_Set_Month(month_t month);
+static void DS3231_Set_Century(century_t century);
 static void DS3231_Set_Year(year_t year);
 static void DS3231_Set_Full_Date(full_date_t full_date);
 static void DS3231_Set_Full_Time(full_time_t full_time);
@@ -46,6 +47,16 @@ static void DS3231_Set_Full_Datetime(full_datetime_t full_datetime);
 
 /*************** INTERRUPT SETTER FUNCTIONS *****************/
 static void DS3231_Set_Seconds_IT(seconds_t seconds);
+static void DS3231_Set_Minutes_IT(minutes_t minutes);
+static void DS3231_Set_Hours_IT(hours_t hours);
+static void DS3231_Set_Day_Of_Week_IT(day_of_week_t dow);
+static void DS3231_Set_Date_IT(date_t date);
+static void DS3231_Set_Month_IT(month_t month);
+static void DS3231_Set_Year_IT(year_t year);
+static void DS3231_Set_Century_IT(century_t century);
+static void DS3231_Set_Full_Date_IT(full_date_t full_date);
+static void DS3231_Set_Full_Time_IT(full_time_t full_time);
+static void DS3231_Set_Full_Datetime_IT(full_datetime_t full_datetime);
 
 /*************** CONVERSION FUNCTIONS FROM DS3231 REGISTER FORMAT *****************/
 static seconds_t Convert_Seconds_From_DS3231(uint8_t sec_byte);
@@ -67,7 +78,7 @@ static uint8_t Convert_Minutes_To_DS3231(minutes_t minutes);
 static uint8_t Convert_Hours_To_DS3231(hours_t hour_struct);
 static uint8_t Convert_Day_To_DS3231(day_of_week_t day);
 static uint8_t Convert_Date_To_DS3231(date_t date);
-static uint8_t Convert_Month_To_DS3231(month_t month);
+static uint8_t Convert_Month_Century_To_DS3231(month_t month, century_t century);
 static uint8_t Convert_Year_To_DS3231(year_t year);
 static uint8_t *Convert_Time_To_DS3231(full_time_t full_time);
 static uint8_t *Convert_Full_Date_To_DS3231(full_date_t full_date);
@@ -119,12 +130,23 @@ static Clock_Driver_t ds3231_clock_driver = {
 		.Set_Day_Of_Week		= DS3231_Set_Day_Of_Week,
 		.Set_Date				= DS3231_Set_Date,
 		.Set_Month				= DS3231_Set_Month,
+		.Set_Century			= DS3231_Set_Century,
 		.Set_Year				= DS3231_Set_Year,
 		.Set_Full_Date			= DS3231_Set_Full_Date,
 		.Set_Full_Time			= DS3231_Set_Full_Time,
 		.Set_Full_Datetime		= DS3231_Set_Full_Datetime,
 
-		.Set_Seconds_IT			= DS3231_Set_Seconds_IT
+		.Set_Seconds_IT			= DS3231_Set_Seconds_IT,
+		.Set_Minutes_IT			= DS3231_Set_Minutes_IT,
+		.Set_Hours_IT			= DS3231_Set_Hours_IT,
+		.Set_Day_Of_Week_IT		= DS3231_Set_Day_Of_Week_IT,
+		.Set_Date_IT			= DS3231_Set_Date_IT,
+		.Set_Month_IT			= DS3231_Set_Month_IT,
+		.Set_Year_IT			= DS3231_Set_Year_IT,
+		.Set_Century_IT			= DS3231_Set_Century_IT,
+		.Set_Full_Date_IT		= DS3231_Set_Full_Date_IT,
+		.Set_Full_Time_IT		= DS3231_Set_Full_Time_IT,
+		.Set_Full_Datetime_IT	= DS3231_Set_Full_Datetime_IT
 };
 
 // Return pointer to the Clock Driver for external interface
@@ -133,14 +155,13 @@ Clock_Driver_t *get_clock_driver(void)
 	return &ds3231_clock_driver;
 }
 
-static void DS3231_Initialize(Clock_Device_t ds3231_dev)
+static void DS3231_Initialize(Clock_Device_t *ds3231_dev)
 {
 	ds3231_handle.clock_dev = ds3231_dev;
 	ds3231_handle.state = DS3231_STATE_IDLE;
 	ds3231_handle.curr_unit = DS3231_UNIT_NONE;
 	ds3231_handle.i2c_interface = get_i2c_interface();
 	ds3231_handle.i2c_interface->Initialize();
-	ds3231_handle.clock_dev.ctrl_stage = CLOCK_CTRL_IDLE;
 }
 
 static void Read_From_DS3231(uint8_t *p_rx_buffer, uint8_t ds3231_addr, uint8_t len)
@@ -282,8 +303,42 @@ void I2C_Write_Complete_Callback(I2C_Device_t *p_i2c_dev)
 			break;
 		case DS3231_STATE_DATA_WRITE:
 			ds3231_handle.state = DS3231_STATE_IDLE;
-			Clock_Set_Seconds_Complete_Callback(&ds3231_handle.clock_dev);
-			break;
+			switch (ds3231_handle.curr_unit)
+			{
+			case DS3231_UNIT_SECONDS:
+				Clock_Set_Seconds_Complete_Callback(ds3231_handle.clock_dev);
+				break;
+			case DS3231_UNIT_MINUTES:
+				Clock_Set_Minutes_Complete_Callback(ds3231_handle.clock_dev);
+				break;
+			case DS3231_UNIT_HOURS:
+				Clock_Set_Hours_Complete_Callback(ds3231_handle.clock_dev);
+				break;
+			case DS3231_UNIT_DOW:
+				Clock_Set_Day_Of_Week_Complete_Callback(ds3231_handle.clock_dev);
+				break;
+			case DS3231_UNIT_DATE:
+				Clock_Set_Date_Complete_Callback(ds3231_handle.clock_dev);
+				break;
+			case DS3231_UNIT_MONTHS:
+				Clock_Set_Months_Complete_Callback(ds3231_handle.clock_dev);
+				break;
+			case DS3231_UNIT_CENTURY:
+				Clock_Set_Century_Complete_Callback(ds3231_handle.clock_dev);
+				break;
+			case DS3231_UNIT_YEAR:
+				Clock_Set_Years_Complete_Callback(ds3231_handle.clock_dev);
+				break;
+			case DS3231_UNIT_FULL_TIME:
+				Clock_Set_Full_Time_Complete_Callback(ds3231_handle.clock_dev);
+				break;
+			case DS3231_UNIT_FULL_DATE:
+				Clock_Set_Full_Date_Complete_Callback(ds3231_handle.clock_dev);
+				break;
+			case DS3231_UNIT_DATETIME:
+				Clock_Set_Datetime_Complete_Callback(ds3231_handle.clock_dev);
+				break;
+			}
 	}
 }
 
@@ -296,80 +351,80 @@ void I2C_Read_Complete_Callback(I2C_Device_t *p_i2c_dev)
 		case DS3231_UNIT_SECONDS:
 			seconds_t new_secs = Convert_Seconds_From_DS3231(*I2C_RX_Ring_Buffer_Read(p_i2c_dev, DS3231_LEN_SECONDS));
 			ds3231_handle.state = DS3231_STATE_IDLE;
-			ds3231_handle.clock_dev.seconds = new_secs;
-			Clock_Get_Seconds_Complete_Callback(&ds3231_handle.clock_dev);
+			ds3231_handle.clock_dev->time.seconds = new_secs;
+			Clock_Get_Seconds_Complete_Callback(ds3231_handle.clock_dev);
 			break;
 		case DS3231_UNIT_MINUTES:
 			minutes_t new_mins = Convert_Minutes_From_DS3231(*I2C_RX_Ring_Buffer_Read(p_i2c_dev, DS3231_LEN_MINUTES));
 			ds3231_handle.state = DS3231_STATE_IDLE;
-			ds3231_handle.clock_dev.minutes = new_mins;
-			Clock_Get_Minutes_Complete_Callback(&ds3231_handle.clock_dev);
+			ds3231_handle.clock_dev->time.minutes = new_mins;
+			Clock_Get_Minutes_Complete_Callback(ds3231_handle.clock_dev);
 			break;
 		case DS3231_UNIT_HOURS:
 			hours_t new_hours = Convert_Hours_From_DS3231(*I2C_RX_Ring_Buffer_Read(p_i2c_dev, DS3231_LEN_HOURS));
 			ds3231_handle.state = DS3231_STATE_IDLE;
-			ds3231_handle.clock_dev.hours = new_hours;
-			Clock_Get_Hours_Complete_Callback(&ds3231_handle.clock_dev);
+			ds3231_handle.clock_dev->time.hours = new_hours;
+			Clock_Get_Hours_Complete_Callback(ds3231_handle.clock_dev);
 			break;
 		case DS3231_UNIT_DOW:
 			day_of_week_t new_dow = Convert_Day_From_DS3231(*I2C_RX_Ring_Buffer_Read(p_i2c_dev, DS3231_LEN_DOW));
 			ds3231_handle.state = DS3231_STATE_IDLE;
-			ds3231_handle.clock_dev.dow = new_dow;
-			Clock_Get_Day_Of_Week_Complete_Callback(&ds3231_handle.clock_dev);
+			ds3231_handle.clock_dev->date.day_of_week = new_dow;
+			Clock_Get_Day_Of_Week_Complete_Callback(ds3231_handle.clock_dev);
 			break;
 		case DS3231_UNIT_DATE:
 			date_t new_date = Convert_Date_From_DS3231(*I2C_RX_Ring_Buffer_Read(p_i2c_dev, DS3231_LEN_DATE));
 			ds3231_handle.state = DS3231_STATE_IDLE;
-			ds3231_handle.clock_dev.date = new_date;
-			Clock_Get_Date_Complete_Callback(&ds3231_handle.clock_dev);
+			ds3231_handle.clock_dev->date.date = new_date;
+			Clock_Get_Date_Complete_Callback(ds3231_handle.clock_dev);
 			break;
 		case DS3231_UNIT_MONTHS:
 			month_t new_month = Convert_Month_From_DS3231(*I2C_RX_Ring_Buffer_Read(p_i2c_dev, DS3231_LEN_MONTH_CENTURY));
 			ds3231_handle.state = DS3231_STATE_IDLE;
-			ds3231_handle.clock_dev.month = new_month;
-			Clock_Get_Month_Complete_Callback(&ds3231_handle.clock_dev);
+			ds3231_handle.clock_dev->date.month = new_month;
+			Clock_Get_Month_Complete_Callback(ds3231_handle.clock_dev);
 			break;
 		case DS3231_UNIT_YEAR:
 			year_t new_year = Convert_Month_From_DS3231(*I2C_RX_Ring_Buffer_Read(p_i2c_dev, DS3231_LEN_YEAR));
 			ds3231_handle.state = DS3231_STATE_IDLE;
-			ds3231_handle.clock_dev.year = new_year;
-			Clock_Get_Year_Complete_Callback(&ds3231_handle.clock_dev);
+			ds3231_handle.clock_dev->date.year = new_year;
+			Clock_Get_Year_Complete_Callback(ds3231_handle.clock_dev);
 			break;
 		case DS3231_UNIT_CENTURY:
 			century_t new_century = Convert_Month_From_DS3231(*I2C_RX_Ring_Buffer_Read(p_i2c_dev, DS3231_LEN_MONTH_CENTURY));
 			ds3231_handle.state = DS3231_STATE_IDLE;
-			ds3231_handle.clock_dev.century = new_century;
-			Clock_Get_Century_Complete_Callback(&ds3231_handle.clock_dev);
+			ds3231_handle.clock_dev->date.century = new_century;
+			Clock_Get_Century_Complete_Callback(ds3231_handle.clock_dev);
 			break;
 		case DS3231_UNIT_FULL_DATE:
 			out_buffer = I2C_RX_Ring_Buffer_Read(p_i2c_dev, DS3231_LEN_FULL_DATE);
-			ds3231_handle.clock_dev.dow = Convert_Day_From_DS3231(out_buffer[0]);
-			ds3231_handle.clock_dev.date = Convert_Date_From_DS3231(out_buffer[1]);
-			ds3231_handle.clock_dev.month = Convert_Month_From_DS3231(out_buffer[2]);
-			ds3231_handle.clock_dev.year = Convert_Year_From_DS3231(out_buffer[3]);
-			ds3231_handle.clock_dev.century = Convert_Century_From_DS3231(out_buffer[2]);
-			Clock_Get_Full_Date_Complete_Callback(&ds3231_handle.clock_dev);
+			ds3231_handle.clock_dev->date.day_of_week = Convert_Day_From_DS3231(out_buffer[0]);
+			ds3231_handle.clock_dev->date.date = Convert_Date_From_DS3231(out_buffer[1]);
+			ds3231_handle.clock_dev->date.month = Convert_Month_From_DS3231(out_buffer[2]);
+			ds3231_handle.clock_dev->date.year = Convert_Year_From_DS3231(out_buffer[3]);
+			ds3231_handle.clock_dev->date.century = Convert_Century_From_DS3231(out_buffer[2]);
+			Clock_Get_Full_Date_Complete_Callback(ds3231_handle.clock_dev);
 			break;
 		case DS3231_UNIT_FULL_TIME:
 			out_buffer = I2C_RX_Ring_Buffer_Read(p_i2c_dev, DS3231_LEN_FULL_TIME);
-			ds3231_handle.clock_dev.seconds = Convert_Seconds_From_DS3231(out_buffer[0]);
-			ds3231_handle.clock_dev.minutes = Convert_Minutes_From_DS3231(out_buffer[1]);
-			ds3231_handle.clock_dev.hours = Convert_Hours_From_DS3231(out_buffer[2]);
+			ds3231_handle.clock_dev->time.seconds = Convert_Seconds_From_DS3231(out_buffer[0]);
+			ds3231_handle.clock_dev->time.minutes = Convert_Minutes_From_DS3231(out_buffer[1]);
+			ds3231_handle.clock_dev->time.hours = Convert_Hours_From_DS3231(out_buffer[2]);
 			ds3231_handle.state = DS3231_STATE_IDLE;
-			Clock_Get_Full_Time_Complete_Callback(&ds3231_handle.clock_dev);
+			Clock_Get_Full_Time_Complete_Callback(ds3231_handle.clock_dev);
 			break;
 		case DS3231_UNIT_DATETIME:  /* TODO: make a function out of extracting date and time */
 			out_buffer = I2C_RX_Ring_Buffer_Read(p_i2c_dev, DS3231_LEN_DATETIME);
-			ds3231_handle.clock_dev.seconds = Convert_Seconds_From_DS3231(out_buffer[0]);
-			ds3231_handle.clock_dev.minutes = Convert_Minutes_From_DS3231(out_buffer[1]);
-			ds3231_handle.clock_dev.hours = Convert_Hours_From_DS3231(out_buffer[2]);
-			ds3231_handle.clock_dev.dow = Convert_Day_From_DS3231(out_buffer[3]);
-			ds3231_handle.clock_dev.date = Convert_Date_From_DS3231(out_buffer[4]);
-			ds3231_handle.clock_dev.month = Convert_Month_From_DS3231(out_buffer[5]);
-			ds3231_handle.clock_dev.year = Convert_Year_From_DS3231(out_buffer[4]);
-			ds3231_handle.clock_dev.century = Convert_Century_From_DS3231(out_buffer[6]);
+			ds3231_handle.clock_dev->time.seconds = Convert_Seconds_From_DS3231(out_buffer[0]);
+			ds3231_handle.clock_dev->time.minutes = Convert_Minutes_From_DS3231(out_buffer[1]);
+			ds3231_handle.clock_dev->time.hours = Convert_Hours_From_DS3231(out_buffer[2]);
+			ds3231_handle.clock_dev->date.day_of_week = Convert_Day_From_DS3231(out_buffer[3]);
+			ds3231_handle.clock_dev->date.date = Convert_Date_From_DS3231(out_buffer[4]);
+			ds3231_handle.clock_dev->date.month = Convert_Month_From_DS3231(out_buffer[5]);
+			ds3231_handle.clock_dev->date.year = Convert_Year_From_DS3231(out_buffer[6]);
+			ds3231_handle.clock_dev->date.century = Convert_Century_From_DS3231(out_buffer[5]);
 			ds3231_handle.state = DS3231_STATE_IDLE;
-			Clock_Get_Datetime_Complete_Callback(&ds3231_handle.clock_dev);
+			Clock_Get_Datetime_Complete_Callback(ds3231_handle.clock_dev);
 			break;
 	}
 }
@@ -380,7 +435,7 @@ static seconds_t DS3231_Get_Seconds(void)
 	uint8_t p_rx_buffer[DS3231_LEN_SECONDS];
 	Read_From_DS3231(p_rx_buffer, DS3231_ADDR_SECONDS, DS3231_LEN_SECONDS);
 	seconds_t new_secs = Convert_Seconds_From_DS3231(*p_rx_buffer);
-	ds3231_handle.clock_dev.seconds = new_secs;
+	ds3231_handle.clock_dev->time.seconds = new_secs;
 	return new_secs;
 }
 
@@ -389,7 +444,7 @@ static minutes_t DS3231_Get_Minutes(void)
 	uint8_t p_rx_buffer[DS3231_LEN_MINUTES];
 	Read_From_DS3231(p_rx_buffer, DS3231_ADDR_MINUTES, DS3231_LEN_MINUTES);
 	seconds_t new_mins = Convert_Minutes_From_DS3231(*p_rx_buffer);
-	ds3231_handle.clock_dev.minutes = new_mins;
+	ds3231_handle.clock_dev->time.minutes = new_mins;
 	return new_mins;
 }
 
@@ -398,7 +453,7 @@ static hours_t DS3231_Get_Hours(void)
 	uint8_t p_rx_buffer[DS3231_LEN_HOURS];
 	Read_From_DS3231(p_rx_buffer, DS3231_ADDR_HOURS, DS3231_LEN_HOURS);
 	hours_t new_hours = Convert_Hours_From_DS3231(*p_rx_buffer);
-	ds3231_handle.clock_dev.hours = new_hours;
+	ds3231_handle.clock_dev->time.hours = new_hours;
 	return new_hours;
 }
 
@@ -416,7 +471,7 @@ static day_of_week_t DS3231_Get_Day_Of_Week(void)
 	uint8_t p_rx_buffer[DS3231_LEN_DOW];
 	Read_From_DS3231(p_rx_buffer, DS3231_ADDR_DAY, DS3231_LEN_DOW);
 	day_of_week_t dow = Convert_Day_From_DS3231(*p_rx_buffer);
-	ds3231_handle.clock_dev.dow = dow;
+	ds3231_handle.clock_dev->date.day_of_week = dow;
 	return dow;
 }
 
@@ -425,7 +480,7 @@ static date_t DS3231_Get_Date(void)
 	uint8_t p_rx_buffer[DS3231_LEN_DATE];
 	Read_From_DS3231(p_rx_buffer, DS3231_ADDR_DATE, DS3231_LEN_DATE);
 	date_t new_date = Convert_Date_From_DS3231(*p_rx_buffer);
-	ds3231_handle.clock_dev.date = new_date;
+	ds3231_handle.clock_dev->date.date = new_date;
 	return new_date;
 }
 
@@ -434,7 +489,7 @@ static month_t DS3231_Get_Month(void)
 	uint8_t p_rx_buffer[DS3231_LEN_MONTH_CENTURY];
 	Read_From_DS3231(p_rx_buffer, DS3231_ADDR_MONTH_CENTURY, DS3231_LEN_MONTH_CENTURY);
 	month_t new_month = Convert_Month_From_DS3231(*p_rx_buffer);
-	ds3231_handle.clock_dev.month = new_month;
+	ds3231_handle.clock_dev->date.month = new_month;
 	return new_month;
 }
 
@@ -443,7 +498,7 @@ static century_t DS3231_Get_Century(void)
 	uint8_t p_rx_buffer[DS3231_LEN_MONTH_CENTURY];
 	Read_From_DS3231(p_rx_buffer, DS3231_ADDR_MONTH_CENTURY, DS3231_LEN_MONTH_CENTURY);
 	century_t new_century = (*p_rx_buffer) >> 7;
-	ds3231_handle.clock_dev.century = new_century;
+	ds3231_handle.clock_dev->date.century = new_century;
 	return new_century;
 }
 
@@ -452,7 +507,7 @@ static year_t DS3231_Get_Year(void)
 	uint8_t p_rx_buffer[DS3231_LEN_YEAR];
 	Read_From_DS3231(p_rx_buffer, DS3231_ADDR_YEAR, DS3231_LEN_YEAR);
 	year_t new_year = Convert_Year_From_DS3231(*p_rx_buffer);
-	ds3231_handle.clock_dev.year = new_year;
+	ds3231_handle.clock_dev->date.year = new_year;
 	return new_year;
 }
 
@@ -580,7 +635,15 @@ static void DS3231_Set_Date(date_t date)
 
 static void DS3231_Set_Month(month_t month)
 {
-	uint8_t p_tx_buffer[DS3231_LEN_MONTH_CENTURY + 1] = { DS3231_ADDR_MONTH_CENTURY, Convert_Month_To_DS3231(month) };
+	century_t current_century = DS3231_Get_Century();
+	uint8_t p_tx_buffer[DS3231_LEN_MONTH_CENTURY + 1] = { DS3231_ADDR_MONTH_CENTURY, Convert_Month_Century_To_DS3231(month, current_century) };
+	Write_To_DS3231(p_tx_buffer, DS3231_ADDR_MONTH_CENTURY, DS3231_LEN_MONTH_CENTURY + 1);
+}
+
+static void DS3231_Set_Century(century_t century)
+{
+	month_t current_month = DS3231_Get_Month();
+	uint8_t p_tx_buffer[DS3231_LEN_MONTH_CENTURY + 1] = { DS3231_ADDR_MONTH_CENTURY, Convert_Month_Century_To_DS3231(current_month, century) };
 	Write_To_DS3231(p_tx_buffer, DS3231_ADDR_MONTH_CENTURY, DS3231_LEN_MONTH_CENTURY + 1);
 }
 
@@ -620,9 +683,89 @@ static void DS3231_Set_Full_Datetime(full_datetime_t full_datetime)
 static void DS3231_Set_Seconds_IT(seconds_t seconds)
 {
 	uint8_t p_tx_buffer[DS3231_LEN_SECONDS + 1] = { DS3231_ADDR_SECONDS, Convert_Seconds_To_DS3231(seconds) };
-	Write_To_DS3231_IT(p_tx_buffer, DS3231_ADDR_SECONDS, DS3231_LEN_SECONDS + 1);
+	Write_To_DS3231_IT(p_tx_buffer, DS3231_UNIT_SECONDS, DS3231_LEN_SECONDS + 1);
 }
 
+static void DS3231_Set_Minutes_IT(minutes_t minutes)
+{
+	uint8_t p_tx_buffer[DS3231_LEN_MINUTES + 1] = { DS3231_ADDR_MINUTES, Convert_Minutes_To_DS3231(minutes) };
+	Write_To_DS3231_IT(p_tx_buffer, DS3231_UNIT_MINUTES, DS3231_LEN_MINUTES + 1);
+}
+
+static void DS3231_Set_Hours_IT(hours_t hours)
+{
+	uint8_t p_tx_buffer[DS3231_LEN_HOURS + 1] = { DS3231_ADDR_HOURS, Convert_Hours_To_DS3231(hours) };
+	Write_To_DS3231_IT(p_tx_buffer, DS3231_UNIT_HOURS, DS3231_LEN_HOURS + 1);
+}
+
+static void DS3231_Set_Day_Of_Week_IT(day_of_week_t dow)
+{
+	uint8_t p_tx_buffer[DS3231_LEN_DOW + 1] = { DS3231_ADDR_DAY, Convert_Day_To_DS3231(dow) };
+	Write_To_DS3231_IT(p_tx_buffer, DS3231_UNIT_DOW, DS3231_LEN_DOW + 1);
+}
+
+static void DS3231_Set_Date_IT(date_t date)
+{
+	uint8_t p_tx_buffer[DS3231_LEN_DATE + 1] = { DS3231_ADDR_DATE, Convert_Day_To_DS3231(date) };
+	Write_To_DS3231_IT(p_tx_buffer, DS3231_UNIT_DATE, DS3231_LEN_DATE + 1);
+}
+
+static void DS3231_Set_Month_IT(month_t month)
+{
+	/* TODO: find way to avoid this blocking call in the middle of an interrupt call */
+	month_t current_century = DS3231_Get_Century();
+	uint8_t p_tx_buffer[DS3231_LEN_MONTH_CENTURY + 1] = { DS3231_ADDR_MONTH_CENTURY, Convert_Month_Century_To_DS3231(month, current_century) };
+	Write_To_DS3231_IT(p_tx_buffer, DS3231_UNIT_MONTHS, DS3231_LEN_MONTH_CENTURY + 1);
+}
+
+static void DS3231_Set_Year_IT(year_t year)
+{
+	uint8_t p_tx_buffer[DS3231_LEN_YEAR + 1] = { DS3231_ADDR_YEAR, Convert_Year_To_DS3231(year) };
+	Write_To_DS3231_IT(p_tx_buffer, DS3231_UNIT_YEAR, DS3231_LEN_YEAR + 1);
+}
+
+static void DS3231_Set_Century_IT(century_t century)
+{
+	/* TODO: find way to avoid this blocking call in the middle of an interrupt call */
+	month_t current_month = DS3231_Get_Month();
+	uint8_t p_tx_buffer[DS3231_LEN_MONTH_CENTURY + 1] = { DS3231_ADDR_MONTH_CENTURY, Convert_Month_Century_To_DS3231(current_month, century) };
+	Write_To_DS3231_IT(p_tx_buffer, DS3231_UNIT_CENTURY, DS3231_LEN_MONTH_CENTURY + 1);
+}
+
+static void DS3231_Set_Full_Date_IT(full_date_t full_date)
+{
+	uint8_t p_tx_buffer[DS3231_LEN_FULL_DATE + 1];
+	p_tx_buffer[0] = DS3231_ADDR_DAY;
+	p_tx_buffer[1] = Convert_Day_To_DS3231(full_date.day_of_week);
+	p_tx_buffer[2] = Convert_Date_To_DS3231(full_date.date);
+	p_tx_buffer[3] = Convert_Month_Century_To_DS3231(full_date.month, full_date.century);
+	p_tx_buffer[4] = Convert_Year_To_DS3231(full_date.year);
+	Write_To_DS3231_IT(p_tx_buffer, DS3231_UNIT_FULL_DATE, DS3231_LEN_FULL_DATE + 1);
+}
+
+static void DS3231_Set_Full_Time_IT(full_time_t full_time)
+{
+	uint8_t p_tx_buffer[DS3231_LEN_FULL_TIME + 1];
+	p_tx_buffer[0] = DS3231_ADDR_SECONDS;
+	p_tx_buffer[1] = Convert_Seconds_To_DS3231(full_time.seconds);
+	p_tx_buffer[2] = Convert_Minutes_To_DS3231(full_time.minutes);
+	p_tx_buffer[3] = Convert_Hours_To_DS3231(full_time.hours);
+	Write_To_DS3231_IT(p_tx_buffer, DS3231_UNIT_FULL_TIME, DS3231_LEN_FULL_TIME + 1);
+}
+
+static void DS3231_Set_Full_Datetime_IT(full_datetime_t full_datetime)
+{
+	uint8_t p_tx_buffer[DS3231_LEN_DATETIME + 1];
+	p_tx_buffer[0] = DS3231_ADDR_SECONDS;
+	p_tx_buffer[1] = Convert_Seconds_To_DS3231(full_datetime.time.seconds);
+	p_tx_buffer[2] = Convert_Minutes_To_DS3231(full_datetime.time.minutes);
+	p_tx_buffer[3] = Convert_Hours_To_DS3231(full_datetime.time.hours);
+	p_tx_buffer[4] = Convert_Day_To_DS3231(full_datetime.date.day_of_week);
+	p_tx_buffer[5] = Convert_Date_To_DS3231(full_datetime.date.date);
+	p_tx_buffer[6] = Convert_Month_Century_To_DS3231(full_datetime.date.month, full_datetime.date.century);
+	p_tx_buffer[7] = Convert_Year_To_DS3231(full_datetime.date.year);
+	Write_To_DS3231_IT(p_tx_buffer, DS3231_UNIT_DATETIME, DS3231_LEN_DATETIME + 1);
+}
 
 /*************** PRIVATE UTILITY FUNCTIONS *****************/
 static void DS3231_Convert_Hour_Format(I2C_Handle_t *p_i2c_handle, hour_format_t new_mode)
@@ -805,10 +948,10 @@ static uint8_t Convert_Date_To_DS3231(date_t date)
 	return Convert_Binary_To_BCD(date);
 }
 
-static uint8_t Convert_Month_To_DS3231(month_t month)
+static uint8_t Convert_Month_Century_To_DS3231(month_t month, century_t century)
 {
 	uint8_t month_byte = Convert_Binary_To_BCD(month);
-	return (month_byte |= (1 << 7));
+	return (month_byte |= (century << DS3231_CENTURY_BIT));
 }
 
 static uint8_t Convert_Year_To_DS3231(year_t year)

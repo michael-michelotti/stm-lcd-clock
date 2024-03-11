@@ -30,7 +30,7 @@ typedef enum
 
 typedef struct
 {
-	Clock_Device_t 		clock_dev;
+	Clock_Device_t 		*clock_dev;
 	DS3231_State_t		state;
 	DS3231_Unit_t		curr_unit;
 	I2C_Interface_t		*i2c_interface;

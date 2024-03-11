@@ -1,10 +1,35 @@
 #include "lcd1602a_display_driver.h"
 
 #include <stdlib.h>
+#include <string.h>
 
-#include "stm32f407xx.h"
-#include "stm32f407xx_gpio_driver.h"
+static void LCD1602A_Initialize(Display_Device_t lcd1602a_dev);
+static void LCD1602A_On(void);
+static void LCD1602A_Off(void);
+static void LCD1602A_Clear(void);
+static void LCD1602A_Update_Seconds(seconds_t seconds);
+static void LCD1602A_Update_Buffer_Seconds(seconds_t seconds);
+static void LCD1602A_Update_Minutes(minutes_t minutes);
+static void LCD1602A_Update_Buffer_Minutes(minutes_t minutes);
+static void LCD1602A_Update_Hours(hours_t hours);
+static void LCD1602A_Update_Buffer_Hours(hours_t hours);
+static void LCD1602A_Update_Time(full_time_t full_time);
+static void LCD1602A_Update_Buffer_Time(full_time_t full_time);
+static void LCD1602A_Update_Date(date_t date);
+static void LCD1602A_Update_Buffer_Date(date_t date);
+static void LCD1602A_Update_Day_Of_Week(day_of_week_t dow);
+static void LCD1602A_Update_Buffer_Day_Of_Week(day_of_week_t dow);
+static void LCD1602A_Update_Month(month_t month);
+static void LCD1602A_Update_Buffer_Month(month_t month);
+static void LCD1602A_Update_Year(year_t year, century_t century);
+static void LCD1602A_Update_Buffer_Year(year_t year, century_t century);
+static void LCD1602A_Update_Full_Date(full_date_t full_date);
+static void LCD1602A_Update_Buffer_Full_Date(full_date_t full_date);
+static void LCD1602A_Update_Datetime(full_datetime_t datetime);
 
+static void LCD1602A_Set_Cursor(uint8_t row, uint8_t column);
+static void LCD1602A_Display_Char(char ch);
+static void LCD1602A_Display_Str(char *str, size_t num_chars);
 static char int_to_ascii_char(uint8_t int_to_covert);
 static void int_to_zero_padded_ascii(char *result, uint8_t int_to_convert);
 static void write_char(char ch);
@@ -21,71 +46,90 @@ static void set_ddram_addr(uint8_t ddram_addr);
 static void pulse_enable(uint32_t us_hold_time);
 static void mdelay(uint32_t cnt);
 static void udelay(uint32_t cnt);
-static char *convert_time_to_str(full_time_t time);
-static char *convert_date_to_str(full_date_t date);
 
-// DEFINE the global state variables which were initially DECLARED in globals.h
-// Any of the global state variables can be accessed from separate modules by including globals.h
-// Display strings for LCD (maximum size of 16 bytes), initiated with all null characters
-char global_time_str[16] = { '\0' };
-char global_date_str[16] = { '\0' };
+static LCD1602A_Handle_t lcd1602a_handle;
+static char reset_time_str[] = "HH:MM:SS AM";
+static char reset_date_str[] = "DOW MM/DD/YYYY";
 
-void init_global_state()
+static Display_Driver_t lcd1602_display_driver = {
+		.Display_Initialize 		= LCD1602A_Initialize,
+		.Display_On					= LCD1602A_On,
+		.Display_Off				= LCD1602A_Off,
+		.Display_Clear				= LCD1602A_Clear,
+		.Display_Update_Seconds		= LCD1602A_Update_Seconds,
+		.Display_Update_Minutes		= LCD1602A_Update_Minutes,
+		.Display_Update_Hours		= LCD1602A_Update_Hours,
+		.Display_Update_Time		= LCD1602A_Update_Time,
+		.Display_Update_Date		= LCD1602A_Update_Date,
+		.Display_Update_Day_Of_Week	= LCD1602A_Update_Day_Of_Week,
+		.Display_Update_Month		= LCD1602A_Update_Month,
+		.Display_Update_Year		= LCD1602A_Update_Year,
+		.Display_Update_Full_Date	= LCD1602A_Update_Full_Date,
+		.Display_Update_Datetime	= LCD1602A_Update_Datetime,
+};
+
+Display_Driver_t *get_display_driver()
 {
-	// Initialize global LCD display strings with blank date and time
-	char *default_time = "00:00:00";
-	char *default_date = "00/00/0000";
-	strncpy(global_time_str, default_time, strlen(default_time));
-	strncpy(global_date_str, default_date, strlen(default_date));
+	return &lcd1602_display_driver;
 }
 
-void LCD_Power_Switch(uint8_t on_or_off)
+static void LCD1602A_Initialize(Display_Device_t lcd1602a_dev)
 {
-	// Power switch pin - PB7
-	GPIO_Pin_Config_t pin_conf = { 7, GPIO_MODE_OUT, GPIO_SPEED_LOW, GPIO_PUPD_NONE, GPIO_OUT_PP, 0 };
-	GPIO_Handle_t pin_handle = { GPIOB, pin_conf };
-	GPIO_Init(&pin_handle);
-
-	if (on_or_off == ON)
-	{
-		GPIO_Write_To_Output_Pin(GPIOB, 7, HIGH);
-	}
-	else
-	{
-		GPIO_Write_To_Output_Pin(GPIOB, 7, LOW);
-	}
-}
-
-void LCD_Initialize()
-{
-	// initialize GPIO pins RS, DB7-DB4
-	// RS = PD0
-	// DB4-7 = PD1-4
-	// E = PD5
-	// Initialize PA1 for RS
+	// Register select pin
 	GPIO_Pin_Config_t pin_conf = { RS_GPIO_PIN, GPIO_MODE_OUT, GPIO_SPEED_HIGH, GPIO_PUPD_NONE, GPIO_OUT_PP, 0 };
-	GPIO_Handle_t pin_handle = { GPIOA, pin_conf };
-	GPIO_Init(&pin_handle);
+	lcd1602a_handle.rs_gpio_handle.p_gpio_x = RS_GPIO_PORT;
+	lcd1602a_handle.rs_gpio_handle.gpio_pin_config = pin_conf;
+	GPIO_Init(&lcd1602a_handle.rs_gpio_handle);
 
-	// Initialize PA2 for E (Enable)
-	pin_handle.gpio_pin_config.gpio_pin_num = E_GPIO_PIN;
-	GPIO_Init(&pin_handle);
-	// Initialize PA3 for DB4
-	pin_handle.gpio_pin_config.gpio_pin_num = DB4_GPIO_PIN;
-	GPIO_Init(&pin_handle);
-	// Initialize PA4 for DB5
-	pin_handle.gpio_pin_config.gpio_pin_num = DB5_GPIO_PIN;
-	GPIO_Init(&pin_handle);
-	// Initialize PA5 for DB6
-	pin_handle.gpio_pin_config.gpio_pin_num = DB6_GPIO_PIN;
-	GPIO_Init(&pin_handle);
-	// Initialize PA6 for DB7
-	pin_handle.gpio_pin_config.gpio_pin_num = DB7_GPIO_PIN;
-	GPIO_Init(&pin_handle);
+	// Read write pin
+	pin_conf.gpio_pin_num = RW_GPIO_PIN;
+	lcd1602a_handle.rw_gpio_handle.p_gpio_x = RW_GPIO_PORT;
+	lcd1602a_handle.rw_gpio_handle.gpio_pin_config = pin_conf;
+	GPIO_Init(&lcd1602a_handle.rw_gpio_handle);
+
+	// Enable pin
+	pin_conf.gpio_pin_num = E_GPIO_PIN;
+	lcd1602a_handle.e_gpio_handle.p_gpio_x = E_GPIO_PORT;
+	lcd1602a_handle.e_gpio_handle.gpio_pin_config = pin_conf;
+	GPIO_Init(&lcd1602a_handle.e_gpio_handle);
+
+	// Data lines - DB4
+	pin_conf.gpio_pin_num = DB4_GPIO_PIN;
+	lcd1602a_handle.db4_gpio_handle.p_gpio_x = DB4_GPIO_PORT;
+	lcd1602a_handle.db4_gpio_handle.gpio_pin_config = pin_conf;
+	GPIO_Init(&lcd1602a_handle.db4_gpio_handle);
+
+	// DB5
+	pin_conf.gpio_pin_num = DB5_GPIO_PIN;
+	lcd1602a_handle.db5_gpio_handle.p_gpio_x = DB5_GPIO_PORT;
+	lcd1602a_handle.db5_gpio_handle.gpio_pin_config = pin_conf;
+	GPIO_Init(&lcd1602a_handle.db5_gpio_handle);
+
+	// DB6
+	pin_conf.gpio_pin_num = DB6_GPIO_PIN;
+	lcd1602a_handle.db6_gpio_handle.p_gpio_x = DB6_GPIO_PORT;
+	lcd1602a_handle.db6_gpio_handle.gpio_pin_config = pin_conf;
+	GPIO_Init(&lcd1602a_handle.db6_gpio_handle);
+
+	// DB7
+	pin_conf.gpio_pin_num = DB7_GPIO_PIN;
+	lcd1602a_handle.db7_gpio_handle.p_gpio_x = DB7_GPIO_PORT;
+	lcd1602a_handle.db7_gpio_handle.gpio_pin_config = pin_conf;
+	GPIO_Init(&lcd1602a_handle.db7_gpio_handle);
+
+	lcd1602a_handle.cursor_col_pos = 0;
+	lcd1602a_handle.cursor_row_pos = 0;
+	lcd1602a_handle.display_dev = lcd1602a_dev;
+
+	strncpy(lcd1602a_handle.time_str_buffer,
+			reset_time_str,
+			sizeof(lcd1602a_handle.time_str_buffer) - 1);
+	strncpy(lcd1602a_handle.date_str_buffer,
+			reset_date_str,
+			sizeof(lcd1602a_handle.date_str_buffer) - 1);
 
 	// set all pins to ground (clear entire GPIOD ODR port)
 	GPIO_Write_To_Output_Port(LCD_GPIO_PORT, 0);
-	LCD_Power_Switch(ON);
 	mdelay(40);
 
 	// as part of initialization, 0x3 must be sent twice, then 0x2 to initiate 4-bit mode
@@ -99,62 +143,276 @@ void LCD_Initialize()
 	// now we need to start sending 8-bit words in 2 nybbles separately (4-bit mode)
 	// 0x28 = 0010 1000, sets line number to 2 and style to 5x8 dot characters
 	function_set(LCD_4_BIT, LCD_2_LINES, LCD_5_8_DOTS);
-	display_on_off(LCD_DISP_ON, LCD_CURSOR_ON, LCD_BLINK_ON);
+	display_on_off(LCD_DISP_ON, LCD_CURSOR_OFF, LCD_BLINK_OFF);
 	clear_display();
 	entry_mode_set(LCD_INCREMENT, LCD_NO_SHIFT);
+	LCD1602A_Set_Cursor(LCD1602A_TIME_ROW, LCD1602A_TIME_COL);
+	LCD1602A_Display_Str(lcd1602a_handle.time_str_buffer,
+						 sizeof(lcd1602a_handle.time_str_buffer) - 1);
+	LCD1602A_Set_Cursor(LCD1602A_FULL_DATE_ROW, LCD1602A_FULL_DATE_COL);
+	LCD1602A_Display_Str(lcd1602a_handle.date_str_buffer,
+						 sizeof(lcd1602a_handle.date_str_buffer) - 1);
 }
 
-void LCD_Set_Cursor(uint8_t row, uint8_t column)
+static void LCD1602A_On(void)
+{
+	display_on_off(LCD_DISP_ON, LCD_CURSOR_OFF, LCD_BLINK_OFF);
+}
+
+static void LCD1602A_Off(void)
+{
+	display_on_off(LCD_DISP_OFF, LCD_CURSOR_OFF, LCD_BLINK_OFF);
+}
+
+static void LCD1602A_Clear(void)
+{
+	LCD1602A_Set_Cursor(LCD1602A_TIME_ROW, LCD1602A_TIME_COL);
+	strncpy(lcd1602a_handle.time_str_buffer,
+		   reset_time_str,
+		   sizeof(reset_time_str) - 1);
+	LCD1602A_Display_Str(lcd1602a_handle.time_str_buffer,
+						 sizeof(lcd1602a_handle.time_str_buffer) - 1);
+
+	LCD1602A_Set_Cursor(LCD1602A_FULL_DATE_ROW, LCD1602A_FULL_DATE_COL);
+	strncpy(lcd1602a_handle.date_str_buffer,
+		   reset_date_str,
+		   sizeof(reset_date_str) - 1);
+	LCD1602A_Display_Str(lcd1602a_handle.date_str_buffer,
+						 sizeof(lcd1602a_handle.date_str_buffer) - 1);
+}
+
+static void LCD1602A_Update_Seconds(seconds_t seconds)
+{
+	LCD1602A_Update_Buffer_Seconds(seconds);
+	LCD1602A_Set_Cursor(LCD1602A_SECS_ROW, LCD1602A_SECS_COL);
+	LCD1602A_Display_Str(lcd1602a_handle.time_str_buffer + LCD1602A_SECS_OFFSET, 2);
+}
+
+static void LCD1602A_Update_Buffer_Seconds(seconds_t seconds)
+{
+	char seconds_str[3] = {0};
+	int_to_zero_padded_ascii(seconds_str, (uint8_t)seconds);
+	strncpy(lcd1602a_handle.time_str_buffer + LCD1602A_SECS_OFFSET,
+			seconds_str,
+			2);
+}
+
+static void LCD1602A_Update_Minutes(minutes_t minutes)
+{
+	LCD1602A_Update_Buffer_Minutes(minutes);
+	LCD1602A_Set_Cursor(LCD1602A_MINS_ROW, LCD1602A_MINS_COL);
+	LCD1602A_Display_Str(lcd1602a_handle.time_str_buffer + LCD1602A_MINS_OFFSET, 2);
+}
+
+static void LCD1602A_Update_Buffer_Minutes(minutes_t minutes)
+{
+	char minutes_str[3] = {0};
+	int_to_zero_padded_ascii(minutes_str, (uint8_t)minutes);
+	strncpy(lcd1602a_handle.time_str_buffer + LCD1602A_MINS_OFFSET,
+			minutes_str,
+			2);
+}
+
+static void LCD1602A_Update_Hours(hours_t hours)
+{
+	LCD1602A_Update_Buffer_Hours(hours);
+	LCD1602A_Set_Cursor(LCD1602A_HRS_ROW, LCD1602A_HRS_COL);
+	LCD1602A_Display_Str(lcd1602a_handle.time_str_buffer + LCD1602A_HRS_OFFSET, 2);
+	LCD1602A_Set_Cursor(LCD1602A_HR_FMT_ROW, LCD1602A_HR_FMT_COL);
+	LCD1602A_Display_Str(lcd1602a_handle.time_str_buffer + LCD1602A_HR_FMT_OFFSET, 2);
+}
+
+static void LCD1602A_Update_Buffer_Hours(hours_t hours)
+{
+	char hours_str[3] = {0};
+	char hour_format[3] = "  ";
+
+	int_to_zero_padded_ascii(hours_str, (uint8_t)hours.hour);
+	strncpy(lcd1602a_handle.time_str_buffer + LCD1602A_HRS_OFFSET,
+			hours_str,
+			2);
+
+	if (hours.hour_format == HOUR_FORMAT_12_HOUR)
+	{
+		if (hours.am_pm == AM_PM_AM)
+		{
+			strncpy(hour_format, "AM", sizeof(hour_format));
+		}
+		else
+		{
+			strncpy(hour_format, "PM", sizeof(hour_format));
+		}
+	}
+
+	strncpy(lcd1602a_handle.time_str_buffer + LCD1602A_HR_FMT_OFFSET,
+			hour_format,
+			2);
+}
+
+static void LCD1602A_Update_Time(full_time_t full_time)
+{
+	LCD1602A_Update_Buffer_Time(full_time);
+	LCD1602A_Update_Hours(full_time.hours);
+	LCD1602A_Update_Minutes(full_time.minutes);
+	LCD1602A_Update_Seconds(full_time.seconds);
+}
+
+static void LCD1602A_Update_Buffer_Time(full_time_t full_time)
+{
+	LCD1602A_Update_Buffer_Hours(full_time.hours);
+	LCD1602A_Update_Buffer_Minutes(full_time.minutes);
+	LCD1602A_Update_Buffer_Seconds(full_time.seconds);
+}
+
+static void LCD1602A_Update_Date(date_t date)
+{
+	LCD1602A_Update_Buffer_Date(date);
+	LCD1602A_Set_Cursor(LCD1602A_DATE_ROW, LCD1602A_DATE_COL);
+	LCD1602A_Display_Str(lcd1602a_handle.date_str_buffer + LCD1602A_DATE_OFFSET, 2);
+}
+
+static void LCD1602A_Update_Buffer_Date(date_t date)
+{
+	char date_str[3] = {0};
+	int_to_zero_padded_ascii(date_str, (uint8_t)date);
+	strncpy(lcd1602a_handle.date_str_buffer + LCD1602A_DATE_OFFSET,
+			date_str,
+			2);
+}
+
+static void LCD1602A_Update_Day_Of_Week(day_of_week_t dow)
+{
+	LCD1602A_Update_Buffer_Day_Of_Week(dow);
+	LCD1602A_Set_Cursor(LCD1602A_DOW_ROW, LCD1602A_DOW_COL);
+	LCD1602A_Display_Str(lcd1602a_handle.date_str_buffer + LCD1602A_DOW_OFFSET, 3);
+}
+
+
+static void LCD1602A_Update_Buffer_Day_Of_Week(day_of_week_t dow)
+{
+	char dow_str[4] = {0};
+	switch (dow)
+	{
+	case DAY_OF_WEEK_SUN:
+		strncpy(dow_str, "Sun", 3);
+		break;
+	case DAY_OF_WEEK_MON:
+		strncpy(dow_str, "Mon", 3);
+		break;
+	case DAY_OF_WEEK_TUE:
+		strncpy(dow_str, "Tue", 3);
+		break;
+	case DAY_OF_WEEK_WED:
+		strncpy(dow_str, "Wed", 3);
+		break;
+	case DAY_OF_WEEK_THU:
+		strncpy(dow_str, "Thu", 3);
+		break;
+	case DAY_OF_WEEK_FRI:
+		strncpy(dow_str, "Fri", 3);
+		break;
+	case DAY_OF_WEEK_SAT:
+		strncpy(dow_str, "Sat", 3);
+		break;
+	}
+	strncpy(lcd1602a_handle.date_str_buffer + LCD1602A_DOW_OFFSET,
+			dow_str,
+			3);
+}
+
+
+static void LCD1602A_Update_Month(month_t month)
+{
+	LCD1602A_Update_Buffer_Month(month);
+	LCD1602A_Set_Cursor(LCD1602A_MONTH_ROW, LCD1602A_MONTH_COL);
+	LCD1602A_Display_Str(lcd1602a_handle.date_str_buffer + LCD1602A_MONTH_OFFSET, 2);
+}
+
+static void LCD1602A_Update_Buffer_Month(month_t month)
+{
+	char month_str[3] = {0};
+	int_to_zero_padded_ascii(month_str, (uint8_t) month);
+	strncpy(lcd1602a_handle.date_str_buffer + LCD1602A_MONTH_OFFSET,
+			month_str,
+			2);
+}
+
+static void LCD1602A_Update_Year(year_t year, century_t century)
+{
+	LCD1602A_Update_Buffer_Year(year, century);
+	LCD1602A_Set_Cursor(LCD1602A_YEAR_ROW, LCD1602A_YEAR_COL);
+	LCD1602A_Display_Str(lcd1602a_handle.date_str_buffer + LCD1602A_YEAR_OFFSET, 4);
+}
+
+static void LCD1602A_Update_Buffer_Year(year_t year, century_t century)
+{
+	char year_str[5] = {0};
+	int_to_zero_padded_ascii(year_str + 2, (uint8_t)year);
+
+	if (century == CENTURY_20TH)
+	{
+		strncpy(year_str, "19", 2);
+	}
+	else
+	{
+		strncpy(year_str, "20", 2);
+	}
+
+	strncpy(lcd1602a_handle.date_str_buffer + LCD1602A_YEAR_OFFSET,
+			year_str,
+			4);
+}
+
+static void LCD1602A_Update_Full_Date(full_date_t full_date)
+{
+	LCD1602A_Update_Buffer_Full_Date(full_date);
+	LCD1602A_Set_Cursor(LCD1602A_FULL_DATE_ROW, LCD1602A_FULL_DATE_COL);
+	LCD1602A_Display_Str(lcd1602a_handle.date_str_buffer,
+						 sizeof(lcd1602a_handle.date_str_buffer) - 1);
+}
+
+static void LCD1602A_Update_Buffer_Full_Date(full_date_t full_date)
+{
+	LCD1602A_Update_Buffer_Date(full_date.date);
+	LCD1602A_Update_Buffer_Day_Of_Week(full_date.day_of_week);
+	LCD1602A_Update_Buffer_Month(full_date.month);
+	LCD1602A_Update_Buffer_Year(full_date.year, full_date.century);
+}
+
+static void LCD1602A_Update_Datetime(full_datetime_t datetime)
+{
+	LCD1602A_Update_Time(datetime.time);
+	LCD1602A_Update_Full_Date(datetime.date);
+}
+
+static void LCD1602A_Set_Cursor(uint8_t row, uint8_t column)
 {
 	uint8_t ddram_addr = 0;
-	if (row == 2)
+	if (row == 1)
 	{
 		// most significant bit needs to be set for 2nd column
 		ddram_addr |= (1 << 6);
 	}
 	// row number is 4 bits, 0 through F for 1 to 16
-	ddram_addr |= ((column-1) & 0xF);
+	ddram_addr |= (column & 0xF);
 
 	set_ddram_addr(ddram_addr);
 }
 
-void LCD_Display_Str(char *str)
-{
-	char curr;
-	while ((curr = *str) != '\0')
-	{
-		LCD_Display_Char(curr);
-		str++;
-	}
-}
-
-void LCD_Display_Char(char ch)
+static void LCD1602A_Display_Char(char ch)
 {
 	write_char(ch);
 }
 
-void LCD_Update_Time(full_time_t time)
+static void LCD1602A_Display_Str(char *str, size_t num_chars)
 {
-	// set cursor to time position
-	LCD_Set_Cursor(DEFAULT_TIME_ROW, DEFAULT_TIME_COL);
-
-	char *my_time_str = convert_time_to_str(time);
-	LCD_Display_Str(my_time_str);
-}
-
-void LCD_Update_Date(full_date_t date)
-{
-	// set cursor to time position
-	LCD_Set_Cursor(DEFAULT_DATE_ROW, DEFAULT_DATE_COL);
-
-	char *my_date_str = convert_date_to_str(date);
-	LCD_Display_Str(my_date_str);
-}
-
-void LCD_Update_Date_And_Time(full_datetime_t datetime)
-{
-	LCD_Update_Time(datetime.time);
-	LCD_Update_Date(datetime.date);
+	char curr;
+	for (int i = 0; i < num_chars; i++)
+	{
+		curr = *str;
+		LCD1602A_Display_Char(curr);
+		str++;
+	}
 }
 
 // PRIVATE UTILITY FUNCTIONS
@@ -177,79 +435,15 @@ static void int_to_zero_padded_ascii(char *result, uint8_t int_to_convert)
 	}
 }
 
-static char *convert_date_to_str(full_date_t date)
-{
-	char result_buffer[2] = { '\0' };
-
-	global_date_str[8] = '\0';
-
-	int_to_zero_padded_ascii(result_buffer, date.month);
-	global_date_str[0] = result_buffer[0];
-	global_date_str[1] = result_buffer[1];
-	global_date_str[2] = '/';
-
-	int_to_zero_padded_ascii(result_buffer, date.date);
-	global_date_str[3] = result_buffer[0];
-	global_date_str[4] = result_buffer[1];
-	global_date_str[5] = '/';
-
-	int_to_zero_padded_ascii(result_buffer, date.year);
-	global_date_str[6] = result_buffer[0];
-	global_date_str[7] = result_buffer[1];
-
-	return global_date_str;
-}
-
-static char *convert_time_to_str(full_time_t time)
-{
-	// format "HH:MM:SS AM"
-	// manipulates the global time string, declared in globa
-	// convert hour number to HH
-	char result_buffer[2] = { '\0' };
-
-	int_to_zero_padded_ascii(result_buffer, time.hours.hour);
-	global_time_str[0] = result_buffer[0];
-	global_time_str[1] = result_buffer[1];
-	global_time_str[2] = ':';
-
-	int_to_zero_padded_ascii(result_buffer, time.minutes);
-	global_time_str[3] = result_buffer[0];
-	global_time_str[4] = result_buffer[1];
-	global_time_str[5] = ':';
-
-	int_to_zero_padded_ascii(result_buffer, time.seconds);
-	global_time_str[6] = result_buffer[0];
-	global_time_str[7] = result_buffer[1];
-
-	if (time.hours.hour_format == HOUR_FORMAT_12_HOUR)
-	{
-		global_time_str[8] = ' ';
-		if (time.hours.am_pm == AM_PM_AM)
-		{
-			global_time_str[9] = 'A';
-		}
-		else if (time.hours.am_pm == AM_PM_PM)
-		{
-			global_time_str[9] = 'P';
-		}
-		global_time_str[10] = 'M';
-		global_time_str[11] = '\0';
-	}
-	else
-	{
-		global_time_str[8] = '\0';
-	}
-
-	return global_time_str;
-}
-
 static void write_char(char ch)
 {
 	uint8_t low_nybble = (ch & 0xF);
 	uint8_t high_nybble = (ch >> 4);
 
 	// set RS high (for data not command)
-	GPIO_Write_To_Output_Pin(LCD_GPIO_PORT, RS_GPIO_PIN, HIGH);
+	GPIO_Write_To_Output_Pin(lcd1602a_handle.rs_gpio_handle.p_gpio_x,
+							 lcd1602a_handle.rs_gpio_handle.gpio_pin_config.gpio_pin_num,
+							 HIGH);
 	udelay(LCD_TAS_US);
 
 	send_nybble(high_nybble);
@@ -263,7 +457,9 @@ static void write_command(uint8_t cmd_word, uint32_t address_setup_us)
 	uint8_t high_nybble = (cmd_word >> 4);
 
 	// set rs pin low for command; wait tAS (address setup time, 60ns min)
-	GPIO_Write_To_Output_Pin(LCD_GPIO_PORT, RS_GPIO_PIN, LOW);
+	GPIO_Write_To_Output_Pin(lcd1602a_handle.rs_gpio_handle.p_gpio_x,
+							 lcd1602a_handle.rs_gpio_handle.gpio_pin_config.gpio_pin_num,
+							 LOW);
 	udelay(address_setup_us);
 
 	send_nybble(high_nybble);
@@ -273,10 +469,18 @@ static void write_command(uint8_t cmd_word, uint32_t address_setup_us)
 static void send_nybble(uint8_t nybble)
 {
 	// set pins with nybble value, data will be valid before enable pulse starts
-	GPIO_Write_To_Output_Pin(LCD_GPIO_PORT, DB4_GPIO_PIN, ((nybble >> 0) & 1));
-	GPIO_Write_To_Output_Pin(LCD_GPIO_PORT, DB5_GPIO_PIN, ((nybble >> 1) & 1));
-	GPIO_Write_To_Output_Pin(LCD_GPIO_PORT, DB6_GPIO_PIN, ((nybble >> 2) & 1));
-	GPIO_Write_To_Output_Pin(LCD_GPIO_PORT, DB7_GPIO_PIN, ((nybble >> 3) & 1));
+	GPIO_Write_To_Output_Pin(lcd1602a_handle.db4_gpio_handle.p_gpio_x,
+							 lcd1602a_handle.db4_gpio_handle.gpio_pin_config.gpio_pin_num,
+							 ((nybble >> 0) & 1));
+	GPIO_Write_To_Output_Pin(lcd1602a_handle.db5_gpio_handle.p_gpio_x,
+							 lcd1602a_handle.db5_gpio_handle.gpio_pin_config.gpio_pin_num,
+							 ((nybble >> 1) & 1));
+	GPIO_Write_To_Output_Pin(lcd1602a_handle.db6_gpio_handle.p_gpio_x,
+							 lcd1602a_handle.db6_gpio_handle.gpio_pin_config.gpio_pin_num,
+							 ((nybble >> 2) & 1));
+	GPIO_Write_To_Output_Pin(lcd1602a_handle.db7_gpio_handle.p_gpio_x,
+							 lcd1602a_handle.db7_gpio_handle.gpio_pin_config.gpio_pin_num,
+							 ((nybble >> 3) & 1));
 
 	// send nybble to LCD by pulsing enable, then delay 1us for enable pulse width (450ns min)
 	pulse_enable(ENALBE_PULSE_US);
@@ -346,17 +550,21 @@ static void set_ddram_addr(uint8_t ddram_addr)
 static void pulse_enable(uint32_t us_hold_time)
 {
 	// pulse E again for 1us,
-	GPIO_Write_To_Output_Pin(LCD_GPIO_PORT, E_GPIO_PIN, HIGH);
+	GPIO_Write_To_Output_Pin(lcd1602a_handle.e_gpio_handle.p_gpio_x,
+							 lcd1602a_handle.e_gpio_handle.gpio_pin_config.gpio_pin_num,
+							 HIGH);
 	udelay(us_hold_time);
-	GPIO_Write_To_Output_Pin(LCD_GPIO_PORT, E_GPIO_PIN, LOW);
+	GPIO_Write_To_Output_Pin(lcd1602a_handle.e_gpio_handle.p_gpio_x,
+							 lcd1602a_handle.e_gpio_handle.gpio_pin_config.gpio_pin_num,
+							 LOW);
 }
 
 static void mdelay(uint32_t cnt)
 {
-	for(uint32_t i=0; i < (cnt * 1000); i++);
+	for (uint32_t i=0; i < (cnt * 1000); i++);
 }
 
 static void udelay(uint32_t cnt)
 {
-	for(uint32_t i=0; i < (cnt * 1); i++);
+	for (uint32_t i=0; i < (cnt * 1); i++);
 }

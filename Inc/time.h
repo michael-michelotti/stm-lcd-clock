@@ -55,6 +55,12 @@ typedef enum
 	MONTH_DEC
 } month_t;
 
+typedef enum
+{
+	CENTURY_20TH,
+	CENTURY_21ST,
+} century_t;
+
 typedef uint16_t	year_t;
 
 typedef struct
@@ -63,6 +69,7 @@ typedef struct
 	date_t			date;
 	month_t			month;
 	year_t			year;
+	century_t		century;
 } full_date_t;
 
 typedef struct

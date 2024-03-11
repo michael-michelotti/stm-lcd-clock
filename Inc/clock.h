@@ -15,16 +15,21 @@ typedef enum
 
 typedef struct
 {
-	seconds_t			curr_seconds;
-	minutes_t			curr_minutes;
-	hours_t				curr_hours;
+	seconds_t			seconds;
+	minutes_t			minutes;
+	hours_t				hours;
+	date_t				date;
+	day_of_week_t		dow;
+	month_t				month;
+	year_t				year;
+	century_t			century;
 	Clock_Ctrl_Stage_t	ctrl_stage;
 } Clock_Device_t;
 
 
 typedef struct
 {
-	void			(*Initialize)(void);
+	void			(*Initialize)(Clock_Device_t);
 
 	seconds_t 		(*Get_Seconds)(void);
 	void			(*Get_Seconds_IT)(void);
@@ -35,6 +40,7 @@ typedef struct
 	date_t 			(*Get_Date)(void);
 	month_t 		(*Get_Month)(void);
 	year_t 			(*Get_Year)(void);
+	century_t		(*Get_Century)(void);
 	full_date_t		(*Get_Full_Date)(void);
 	full_time_t		(*Get_Full_Time)(void);
 	full_datetime_t (*Get_Full_Datetime)(void);
@@ -54,13 +60,14 @@ typedef struct
 
 Clock_Driver_t *get_clock_driver();
 
-void Clock_Get_Seconds_Complete_Callback(seconds_t secs);
-void Clock_Get_Minutes_Complete_Callback(minutes_t mins);
+void Clock_Get_Seconds_Complete_Callback(Clock_Device_t *clock_dev);
+void Clock_Get_Minutes_Complete_Callback(Clock_Device_t *clock_dev);
+void Clock_Set_Seconds_Comlpete_Callback(Clock_Device_t *clock_dev);
 
 #ifdef DS3231
 #	include "ds3231_rtc_driver.h"
 #else
-#	error "RTC clock driver not defined."
+#	error "Clock driver not defined."
 #endif
 
 #endif /* CLOCK_H_ */

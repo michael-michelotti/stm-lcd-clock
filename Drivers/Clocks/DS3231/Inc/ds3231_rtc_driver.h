@@ -24,6 +24,7 @@ typedef struct
 	Clock_Device_t 		clock_dev;
 	DS3231_State_t		state;
 	DS3231_Unit_t		curr_unit;
+	I2C_Interface_t		*i2c_interface;
 } DS3231_Handle_t;
 
 // TODO: Decide if this should be an enum or not
@@ -77,7 +78,7 @@ typedef struct
 #define DS3231_BLOCKING_CALL		0
 #define DS3231_INTERRUPT_CALL		1
 
-void DS3231_Initialize(void);
+void DS3231_Initialize(Clock_Device_t ds3231_dev);
 
 // Functions which retrieve data from the DS3231 clock module
 seconds_t DS3231_Get_Seconds(void);
@@ -93,6 +94,7 @@ month_t DS3231_Get_Month(void);
 //DS3231_Month_Century_t DS3231_Get_Month_Century(void);
 
 year_t DS3231_Get_Year(void);
+century_t DS3231_Get_Century(void);
 full_date_t DS3231_Get_Full_Date(void);
 full_time_t DS3231_Get_Full_Time(void);
 full_datetime_t DS3231_Get_Full_Datetime(void);
@@ -104,7 +106,7 @@ void DS3231_Set_Seconds(seconds_t seconds);
 void DS3231_Set_Seconds_IT(seconds_t seconds);
 void DS3231_Set_Minutes(minutes_t mins);
 void DS3231_Set_Hours(hours_t hours);
-void DS3231_Set_Day(day_of_week_t dow);
+void DS3231_Set_Day_Of_Week(day_of_week_t dow);
 void DS3231_Set_Date(date_t date);
 void DS3231_Set_Month(month_t month);
 void DS3231_Set_Year(year_t year);

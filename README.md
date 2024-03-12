@@ -93,6 +93,9 @@ As described above, the state for the clock and display objects that is required
 
 Right now, the device state is not manipulated at all at the driver level, and it is left to the application code entirely to manipulate the device states while implementing API calls, callbacks, etc. I'm not sure whether this is typical, or if it would be more ideal/typical to have the driver updating the state on the application-level object (the device) automatically whenever the API calls are made.
 
+### I2C Ring Buffer
+As part of the I2C interface implementation, I required the I2C device to include a ring buffer. The logic for writing to and reading from that ring buffer is contained in `Inc/i2c.c`.
+
 ## Future Improvements
 ### GPIO Interface Abstraction
 Right now, my bare metal STM32F407xx I2C driver code implements an I2C interface which I defined in `Inc/i2c.h`. However, my bare metal GPIO driver implements no such interface. As such, the LCD1602A driver code is coupled quite tightly to the specifics of the STM32F407 GPIO implementation. I could implement a layer of abstraction (GPIO interface) which would make my LCD1602A driver code more portable.

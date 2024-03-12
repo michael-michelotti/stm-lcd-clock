@@ -76,43 +76,43 @@ Display_Driver_t *get_display_driver()
 
 static void LCD1602A_Initialize(Display_Device_t *lcd1602a_dev)
 {
-    // Register select pin
+    /* Register select pin */
     GPIO_Pin_Config_t pin_conf = { RS_GPIO_PIN, GPIO_MODE_OUT, GPIO_SPEED_HIGH, GPIO_PUPD_NONE, GPIO_OUT_PP, 0 };
     lcd1602a_handle.rs_gpio_handle.p_gpio_x = RS_GPIO_PORT;
     lcd1602a_handle.rs_gpio_handle.gpio_pin_config = pin_conf;
     GPIO_Init(&lcd1602a_handle.rs_gpio_handle);
 
-    // Read write pin
+    /* Read write pin */
     pin_conf.gpio_pin_num = RW_GPIO_PIN;
     lcd1602a_handle.rw_gpio_handle.p_gpio_x = RW_GPIO_PORT;
     lcd1602a_handle.rw_gpio_handle.gpio_pin_config = pin_conf;
     GPIO_Init(&lcd1602a_handle.rw_gpio_handle);
 
-    // Enable pin
+    /* Enable pin */
     pin_conf.gpio_pin_num = E_GPIO_PIN;
     lcd1602a_handle.e_gpio_handle.p_gpio_x = E_GPIO_PORT;
     lcd1602a_handle.e_gpio_handle.gpio_pin_config = pin_conf;
     GPIO_Init(&lcd1602a_handle.e_gpio_handle);
 
-    // Data lines - DB4
+    /* Data lines - DB4 */
     pin_conf.gpio_pin_num = DB4_GPIO_PIN;
     lcd1602a_handle.db4_gpio_handle.p_gpio_x = DB4_GPIO_PORT;
     lcd1602a_handle.db4_gpio_handle.gpio_pin_config = pin_conf;
     GPIO_Init(&lcd1602a_handle.db4_gpio_handle);
 
-    // DB5
+    /* DB5 */
     pin_conf.gpio_pin_num = DB5_GPIO_PIN;
     lcd1602a_handle.db5_gpio_handle.p_gpio_x = DB5_GPIO_PORT;
     lcd1602a_handle.db5_gpio_handle.gpio_pin_config = pin_conf;
     GPIO_Init(&lcd1602a_handle.db5_gpio_handle);
 
-    // DB6
+    /* DB6 */
     pin_conf.gpio_pin_num = DB6_GPIO_PIN;
     lcd1602a_handle.db6_gpio_handle.p_gpio_x = DB6_GPIO_PORT;
     lcd1602a_handle.db6_gpio_handle.gpio_pin_config = pin_conf;
     GPIO_Init(&lcd1602a_handle.db6_gpio_handle);
 
-    // DB7
+    /* DB7 */
     pin_conf.gpio_pin_num = DB7_GPIO_PIN;
     lcd1602a_handle.db7_gpio_handle.p_gpio_x = DB7_GPIO_PORT;
     lcd1602a_handle.db7_gpio_handle.gpio_pin_config = pin_conf;
@@ -129,11 +129,11 @@ static void LCD1602A_Initialize(Display_Device_t *lcd1602a_dev)
             RESET_DATE_STR,
             sizeof(lcd1602a_handle.date_str_buffer) - 1);
 
-    // set all pins to ground (clear entire GPIOD ODR port)
+    /* set all pins to ground (clear entire GPIOD ODR port) */
     GPIO_Write_To_Output_Port(LCD_GPIO_PORT, 0);
     mdelay(40);
 
-    // as part of initialization, 0x3 must be sent twice, then 0x2 to initiate 4-bit mode
+    /* as part of initialization, 0x3 must be sent twice, then 0x2 to initiate 4-bit mode */
     send_nybble(0x3);
     mdelay(5);
     send_nybble(0x3);
@@ -141,8 +141,8 @@ static void LCD1602A_Initialize(Display_Device_t *lcd1602a_dev)
     send_nybble(0x3);
     send_nybble(0x2);
 
-    // now we need to start sending 8-bit words in 2 nybbles separately (4-bit mode)
-    // 0x28 = 0010 1000, sets line number to 2 and style to 5x8 dot characters
+    /* now we need to start sending 8-bit words in 2 nybbles separately (4-bit mode) */
+    /* 0x28 = 0010 1000, sets line number to 2 and style to 5x8 dot characters */
     function_set(LCD_4_BIT, LCD_2_LINES, LCD_5_8_DOTS);
     display_on_off(LCD_DISP_ON, LCD_CURSOR_OFF, LCD_BLINK_OFF);
     clear_display();
@@ -545,7 +545,7 @@ static void set_ddram_addr(uint8_t ddram_addr)
 
 static void pulse_enable(uint32_t us_hold_time)
 {
-    // pulse E again for 1us,
+    /* pulse E again for 1us, */
     GPIO_Write_To_Output_Pin(lcd1602a_handle.e_gpio_handle.p_gpio_x,
                              lcd1602a_handle.e_gpio_handle.gpio_pin_config.gpio_pin_num,
                              HIGH);

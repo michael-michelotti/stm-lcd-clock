@@ -43,9 +43,9 @@ typedef enum
     GPIO_MODE_OUT,
     GPIO_MODE_ALT,
     GPIO_MODE_ANALOG,
-    GPIO_MODE_IN_FE,    // interrupt mode, falling edge detection
-    GPIO_MODE_IN_RE,    // interrupt mode, rising edge detection
-    GPIO_MODE_IN_RFT    // interrupt mode, rising and falling edge detection
+    GPIO_MODE_IN_FE,    /* interrupt mode, falling edge detection */
+    GPIO_MODE_IN_RE,    /* interrupt mode, rising edge detection */
+    GPIO_MODE_IN_RFT    /* interrupt mode, rising and falling edge detection */
 } GPIO_Pin_Mode_t;
 
 typedef enum

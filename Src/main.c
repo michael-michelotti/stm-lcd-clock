@@ -10,15 +10,15 @@
 #endif
 
 /* These driver interfaces are defined in Inc/clock.h and Inc/display.h
- * The specific implementation is defined by macro definitions. If DS3231
+ * The interface implementation is defined in the Drivers directory.
+ * Implementation is selected by macro definition. For example, if DS3231
  * is defined, the clock driver uses DS32312 back-end. If LCD1602A is defined,
- * the display driver uses LCD1602A back-end. Those are the only implemented
- * driver interfaces right now. */
+ * the display driver uses LCD1602A back-end.*/
 Clock_Driver_t          *app_clock_driver;
 Display_Driver_t        *app_display_driver;
 
 /* These devices are how the user keeps track of the clock and display objects
- * in the application code. These are attached to back-end specific handles
+ * in the application code. These are attached to handles which are managed
  * at the driver level. */
 Clock_Device_t          ds3231_dev = {
         .ctrl_stage = CLOCK_CTRL_INIT,

@@ -151,36 +151,36 @@ typedef struct
 
 typedef struct
 {
-    volatile uint32_t IMR;           // Interrupt mask
-    volatile uint32_t EMR;           // Event mask
-    volatile uint32_t RTSR;          // Rising trigger selection
-    volatile uint32_t FTSR;          // Falling trigger selection
-    volatile uint32_t SWIEr;         // Software interrupt event
-    volatile uint32_t PR;            // Pending register
+    volatile uint32_t IMR;           /* Interrupt mask */
+    volatile uint32_t EMR;           /* Event mask */
+    volatile uint32_t RTSR;          /* Rising trigger selection */
+    volatile uint32_t FTSR;          /* Falling trigger selection */
+    volatile uint32_t SWIEr;         /* Software interrupt event */
+    volatile uint32_t PR;            /* Pending register */
 } EXTI_Register_Map_t;
 
 typedef struct
 {
-    volatile uint32_t MEMRMP;        // Memory remap
-    volatile uint32_t PMC;           // Peripheral mode configuration
-    volatile uint32_t EXTICR[4];     // External interrupt configuration registers 1-4
+    volatile uint32_t MEMRMP;        /* Memory remap */
+    volatile uint32_t PMC;           /* Peripheral mode configuration */
+    volatile uint32_t EXTICR[4];     /* External interrupt configuration registers 1-4 */
     volatile uint32_t RESERVED_1;
     volatile uint32_t RESERVED_2;
-    volatile uint32_t CMPCR;         // Compensation cell control
+    volatile uint32_t CMPCR;         /* Compensation cell control */
 } SYSCFG_Register_Map_t;
 
 typedef struct
 {
-    volatile uint32_t CR1;           // Control register 1
-    volatile uint32_t CR2;           // Control register 2
-    volatile uint32_t OAR1;          // Own address register 1
-    volatile uint32_t OAR2;          // Own address register 2
-    volatile uint32_t DR;            // Data register
-    volatile uint32_t SR1;           // Status register 1
-    volatile uint32_t SR2;           // Status register 2
-    volatile uint32_t CCR;           // Clock control register
-    volatile uint32_t TRISE;         // TRISE register
-    volatile uint32_t FLTR;          // FLTR register
+    volatile uint32_t CR1;           /* Control register 1 */
+    volatile uint32_t CR2;           /* Control register 2 */
+    volatile uint32_t OAR1;          /* Own address register 1 */
+    volatile uint32_t OAR2;          /* Own address register 2 */
+    volatile uint32_t DR;            /* Data register */
+    volatile uint32_t SR1;           /* Status register 1 */
+    volatile uint32_t SR2;           /* Status register 2 */
+    volatile uint32_t CCR;           /* Clock control register */
+    volatile uint32_t TRISE;         /* TRISE register */
+    volatile uint32_t FLTR;          /* FLTR register */
 } I2C_Register_Map_t;
 
 /*************** PERIPHERAL POINTERS *****************/

@@ -76,6 +76,32 @@ The LCD Vdd and backlight anode are connected to the 5V power rail. The control 
 * D4-D7: PA3-PA6
 
 ## Challenges and Solutions
+### Driver Abstractions
+It took me a while to wrap my head around how I wanted to abstract the application code from the driver specifics of the clock/timekeeper and the display. I eventually settled on defining a clock and display interface in `Inc/clock.h` and `Inc/display.h`, and implementing that interface in the driver code. This should allow the clock and display being used to be configurable.
 
+I'm not sure whether the solution I ended up on is "best practice," or something that a more experienced Embedded Systems engineer would do. Perhaps there is a simpler or more optimized approach that is more typical.
+
+### Handling Devices at Application Level versus Driver Level
+I wanted to create "handle" objects to have all the information centralized that I need to communicate with the DS3231 or LCD1602. However, I didn't want this handle exposed at the application level, as it contains implementation details that are specific to those devices, which would hinder the modularity I was aiming for. 
+
+My solution was to define "device" objects, `Clock_Device_t` and `Display_Device_t`. These objects contain the subset of information about these devices that I wanted expoed to the application code. In other words, information that applies to every clock and every display. Then, I attached those device objects to handle objects, which contained additional information that was specific to the DS3231 or LCD1602. The handle objects are dealt with at the driver level. The device objects are handled at the application level.
+
+Once again, I'm not sure whether this approach is common, or if there is a more typical approach that more experienced engineers apply.
+
+### Managing Device Object States
+As described above, the state for the clock and display objects that is required at the application level is encapsulated in device objects. Those device objects contain a "state" which I called `ctrl_stage`. This field defines whether the clock is currently initializing, busy, errored out, etc.
+
+Right now, the device state is not manipulated at all at the driver level, and it is left to the application code entirely to manipulate the device states while implementing API calls, callbacks, etc. I'm not sure whether this is typical, or if it would be more ideal/typical to have the driver updating the state on the application-level object (the device) automatically whenever the API calls are made.
 
 ## Future Improvements
+### GPIO Interface Abstraction
+Right now, my bare metal STM32F407xx I2C driver code implements an I2C interface which I defined in `Inc/i2c.h`. However, my bare metal GPIO driver implements no such interface. As such, the LCD1602A driver code is coupled quite tightly to the specifics of the STM32F407 GPIO implementation. I could implement a layer of abstraction (GPIO interface) which would make my LCD1602A driver code more portable.
+
+### Interrupt-based Display APIs
+Right now, I only implemented interrupt-based APIs and callbacks for the clock, and not the display. This is less than ideal considering that updating the display takes much longer than setting or getting from the clock, so blocking calls to the display are much more costly than to the clock. In the future, I could implement interrupt-based APIs and callbacks for updating the display.
+
+### Alarms
+The DS3231 chip offers an alarm functionality. I could implement clock and display APIs for setting and handling alarms.
+
+### Error States
+Right now, there is not much validation logic in general. I am not passing any success or failure notifications between functions, and I'm not implementing any error handling functionality. There is also no error state implemented for the display (flashing "error" on screen, etc.) 

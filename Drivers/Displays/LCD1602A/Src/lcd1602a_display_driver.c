@@ -48,9 +48,10 @@ static void mdelay(uint32_t cnt);
 static void udelay(uint32_t cnt);
 
 static LCD1602A_Handle_t lcd1602a_handle;
-static char reset_time_str[] = "HH:MM:SS AM";
-static char reset_date_str[] = "DOW MM/DD/YYYY";
+static const char RESET_TIME_STR[] = "HH:MM:SS AM";
+static const char RESET_DATE_STR[] = "DOW MM/DD/YYYY";
 
+/* Implements the display driver interface defined in Inc/display.h for a HD44780U-controlled 16x2 LCD*/
 static Display_Driver_t lcd1602_display_driver = {
 		.Display_Initialize 		= LCD1602A_Initialize,
 		.Display_On					= LCD1602A_On,
@@ -122,10 +123,10 @@ static void LCD1602A_Initialize(Display_Device_t *lcd1602a_dev)
 	lcd1602a_handle.display_dev = lcd1602a_dev;
 
 	strncpy(lcd1602a_handle.time_str_buffer,
-			reset_time_str,
+			RESET_TIME_STR,
 			sizeof(lcd1602a_handle.time_str_buffer) - 1);
 	strncpy(lcd1602a_handle.date_str_buffer,
-			reset_date_str,
+			RESET_DATE_STR,
 			sizeof(lcd1602a_handle.date_str_buffer) - 1);
 
 	// set all pins to ground (clear entire GPIOD ODR port)
@@ -164,19 +165,20 @@ static void LCD1602A_Off(void)
 	display_on_off(LCD_DISP_OFF, LCD_CURSOR_OFF, LCD_BLINK_OFF);
 }
 
+/* Resets the date and time to the default strings defined in this file */
 static void LCD1602A_Clear(void)
 {
-	LCD1602A_Set_Cursor(LCD1602A_TIME_ROW, LCD1602A_TIME_COL);
 	strncpy(lcd1602a_handle.time_str_buffer,
-		   reset_time_str,
-		   sizeof(reset_time_str) - 1);
+		   RESET_TIME_STR,
+		   sizeof(RESET_TIME_STR) - 1);
+	LCD1602A_Set_Cursor(LCD1602A_TIME_ROW, LCD1602A_TIME_COL);
 	LCD1602A_Display_Str(lcd1602a_handle.time_str_buffer,
 						 sizeof(lcd1602a_handle.time_str_buffer) - 1);
 
-	LCD1602A_Set_Cursor(LCD1602A_FULL_DATE_ROW, LCD1602A_FULL_DATE_COL);
 	strncpy(lcd1602a_handle.date_str_buffer,
-		   reset_date_str,
-		   sizeof(reset_date_str) - 1);
+		   RESET_DATE_STR,
+		   sizeof(RESET_DATE_STR) - 1);
+	LCD1602A_Set_Cursor(LCD1602A_FULL_DATE_ROW, LCD1602A_FULL_DATE_COL);
 	LCD1602A_Display_Str(lcd1602a_handle.date_str_buffer,
 						 sizeof(lcd1602a_handle.date_str_buffer) - 1);
 }
@@ -390,12 +392,11 @@ static void LCD1602A_Set_Cursor(uint8_t row, uint8_t column)
 	uint8_t ddram_addr = 0;
 	if (row == 1)
 	{
-		// most significant bit needs to be set for 2nd column
+		/* 6th bit in DDRAM defines first row vs. second row address */
 		ddram_addr |= (1 << 6);
 	}
-	// row number is 4 bits, 0 through F for 1 to 16
-	ddram_addr |= (column & 0xF);
 
+	ddram_addr |= (column & 0xF);
 	set_ddram_addr(ddram_addr);
 }
 
@@ -415,7 +416,7 @@ static void LCD1602A_Display_Str(char *str, size_t num_chars)
 	}
 }
 
-// PRIVATE UTILITY FUNCTIONS
+/* Utility Functions*/
 static char int_to_ascii_char(uint8_t int_to_covert)
 {
 	return int_to_covert + ASCII_DIGIT_OFFSET;
@@ -440,7 +441,7 @@ static void write_char(char ch)
 	uint8_t low_nybble = (ch & 0xF);
 	uint8_t high_nybble = (ch >> 4);
 
-	// set RS high (for data not command)
+	/* Since I'm writing data, not a command, set RS high */
 	GPIO_Write_To_Output_Pin(lcd1602a_handle.rs_gpio_handle.p_gpio_x,
 							 lcd1602a_handle.rs_gpio_handle.gpio_pin_config.gpio_pin_num,
 							 HIGH);
@@ -450,13 +451,12 @@ static void write_char(char ch)
 	send_nybble(low_nybble);
 }
 
-// RS always low, RW always low
 static void write_command(uint8_t cmd_word, uint32_t address_setup_us)
 {
 	uint8_t low_nybble = (cmd_word & 0xF);
 	uint8_t high_nybble = (cmd_word >> 4);
 
-	// set rs pin low for command; wait tAS (address setup time, 60ns min)
+	/* Since I'm sending a command, set RS low; wait for address setup time, 60ns minimum */
 	GPIO_Write_To_Output_Pin(lcd1602a_handle.rs_gpio_handle.p_gpio_x,
 							 lcd1602a_handle.rs_gpio_handle.gpio_pin_config.gpio_pin_num,
 							 LOW);
@@ -468,7 +468,7 @@ static void write_command(uint8_t cmd_word, uint32_t address_setup_us)
 
 static void send_nybble(uint8_t nybble)
 {
-	// set pins with nybble value, data will be valid before enable pulse starts
+	/* Configure DB4-7 GPIO pins with the nybble value */
 	GPIO_Write_To_Output_Pin(lcd1602a_handle.db4_gpio_handle.p_gpio_x,
 							 lcd1602a_handle.db4_gpio_handle.gpio_pin_config.gpio_pin_num,
 							 ((nybble >> 0) & 1));
@@ -482,26 +482,23 @@ static void send_nybble(uint8_t nybble)
 							 lcd1602a_handle.db7_gpio_handle.gpio_pin_config.gpio_pin_num,
 							 ((nybble >> 3) & 1));
 
-	// send nybble to LCD by pulsing enable, then delay 1us for enable pulse width (450ns min)
+	/* To send nybble to the LCD: pulse enable, then delay 1us for (enable pulse width = 450ns min) */
 	pulse_enable(ENALBE_PULSE_US);
-	// wait 1us for total cycle
-	// (data must be held valid for 10ns, enable cannot pulse high again for 500ns)
+	/* wait for LCD to read data. Data must be held valid for 10ns, enable cannot pulse high again for 500ns */
 	udelay(LCD_HOLD_TIME_US);
 }
 
 static void clear_display()
 {
-	// the command to clear display is always 0x1
 	write_command(CLEAR_DISPLAY, LCD_TAS_US);
-	// 2ms delay - clear display takes ~1.5ms for LCD to internally process
+	/* 2ms delay - clear display takes ~1.5ms for LCD to internally process */
 	mdelay(2);
 }
 
 static void return_home()
 {
-	// the command to return home is always 0x2
 	write_command(RETURN_HOME, LCD_TAS_US);
-	// 2ms delay - clear display takes ~1.5ms for LCD to internally process
+	/* 2ms delay - clear display takes ~1.5ms for LCD to internally process */
 	mdelay(2);
 }
 

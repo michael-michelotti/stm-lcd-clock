@@ -1,10 +1,9 @@
 #ifndef STM32F407XX_H_
 #define STM32F407XX_H_
 
-// Includes (should only include files with include guards)
 #include <stdint.h>
 
-// Generic macros
+/* Generic utility macros */
 #define __weak 			__attribute__((weak))
 #define ENABLE 			1
 #define DISABLE 		0
@@ -20,41 +19,33 @@
 #define FALLING			1
 #define NO_PRIORITY_BITS_IMPLEMENTED	4
 
-#define HSI_CLK_SPEED	16000000u
-
-// Given a mask for any field in a register, and a value for that field, set the value
+/* Given a mask for any field in a register, and a value for that field, set the value */
 #define SET_FIELD(ADDR, MASK, VALUE) do { 																			\
 	uint32_t value = (VALUE);																						\
 	uint32_t curr_reg = *(ADDR);				/* Get current register value */									\
 	value *= ((MASK) & ~((MASK) << 1));			/* Shift field value by multiplying by first bit of mask */			\
 	*(ADDR) = ((curr_reg & ~(MASK)) | value); } /* Set register to old register, cleared by mask, set by value */	\
 	while (0)
-// Given a mask for any field in a register, clear that field
+
 #define CLEAR_FIELD(ADDR, MASK) *(ADDR) &= ~(MASK)
-
-// Given an address and an offset, set the bit at that offset
-// #define SET_BIT(ADDR, BIT) *(ADDR) |= (1 << (BIT))
 #define SET_BIT(REG, MASK) ((REG) |= (MASK))
-
-// Given an address and an offset, clear the bit at that offset
-// #define CLEAR_BIT(ADDR, BIT) *(ADDR) &= ~(1 << (BIT))
 #define CLEAR_BIT(REG, MASK) ((REG) &= ~(MASK))
-
 #define CHECK_BIT(ADDR, MASK) *(ADDR) & (MASK)
-
 uint32_t GET_FIELD(volatile uint32_t REG, uint32_t MASK);
-
 uint8_t GET_BIT(volatile uint32_t REG, uint32_t MASK);
 
+/* General STM32F407 settings */
+#define HSI_CLK_SPEED			16000000u
+
 /*************** MEMORY ADDRESSES *****************/
-// Major memory segment addresses
+/* Major memory segment addresses */
 #define FLASH_BASE_ADDR 		0x08000000u
 #define SRAM1_BASE_ADDR 		0x20000000u
 #define SRAM2_BASE_ADDR 		0x20001C00u
 #define ROM						0x1FFF0000u
 #define SRAM 					SRAM1_BASE_ADDR
 
-// Nested Vector Interrupt Controller, Interrupt enabling (ISER) and disabling (ICER)
+/* Nested Vector Interrupt Controller, Interrupt enabling (ISER) and disabling (ICER) */
 #define NVIC_ISER_0				((volatile uint32_t *)0xE000E100)
 #define NVIC_ISER_1				((volatile uint32_t *)0xE000E104)
 #define NVIC_ISER_2				((volatile uint32_t *)0xE000E108)
@@ -67,19 +58,19 @@ uint8_t GET_BIT(volatile uint32_t REG, uint32_t MASK);
 
 #define NVIC_IPR_0				((volatile uint32_t *)0xE000E400)
 
-// Peripheral bus base addresses
+/* Peripheral bus base addresses */
 #define PERIPH_BASE 			0x40000000u
 #define APB1_PERIPH_BASE		PERIPH_BASE
 #define APB2_PERIPH_BASE		0x40010000u
 #define AHB1_PERIPH_BASE		0x40020000u
 #define AHB2_PERIPH_BASE		0x50000000u
 
-// Peripherals hanging on APB1
+/* Relevant APB1 peripherals */
 #define I2C1_BASE_ADDR			( APB1_PERIPH_BASE + 0x5400 )
 #define I2C2_BASE_ADDR			( APB1_PERIPH_BASE + 0x5800 )
 #define I2C3_BASE_ADDR			( APB1_PERIPH_BASE + 0x5C00 )
 
-// Peripherals hanging on AHB1
+/* Relevant AHB1 peripherals */
 #define GPIOA_BASE_ADDR			( AHB1_PERIPH_BASE + 0x0000 )
 #define GPIOB_BASE_ADDR			( AHB1_PERIPH_BASE + 0x0400 )
 #define GPIOC_BASE_ADDR			( AHB1_PERIPH_BASE + 0x0800 )
@@ -91,11 +82,11 @@ uint8_t GET_BIT(volatile uint32_t REG, uint32_t MASK);
 #define GPIOI_BASE_ADDR			( AHB1_PERIPH_BASE + 0x2000 )
 #define RCC_BASE_ADDR 			( AHB1_PERIPH_BASE + 0x3800 )
 
-// Miscellaneous peripherals
+/* Miscellaneous peripherals */
 #define EXTI_BASE_ADDR			( APB2_PERIPH_BASE + 0x3C00 )
 #define SYSCFG_BASE_ADDR		( APB2_PERIPH_BASE + 0x3800 )
 
-// Vector table position for various EXTI lines (tied to the GPIO pins)
+/* Vector table position for various EXTI lines (tied to the GPIO pins) */
 #define IRQ_NO_EXTI0			6
 #define IRQ_NO_EXTI1			7
 #define IRQ_NO_EXTI2			8
@@ -192,7 +183,7 @@ typedef struct
 	volatile uint32_t FLTR;					// FLTR register
 } I2C_Register_Map_t;
 
-/*************** POINTER MACROS *****************/
+/*************** PERIPHERAL POINTERS *****************/
 #define GPIOA 		( (GPIO_Register_Map_t*) GPIOA_BASE_ADDR )
 #define GPIOB 		( (GPIO_Register_Map_t*) GPIOB_BASE_ADDR )
 #define GPIOC 		( (GPIO_Register_Map_t*) GPIOC_BASE_ADDR )
@@ -211,10 +202,8 @@ typedef struct
 #define I2C2		( (I2C_Register_Map_t*) I2C2_BASE_ADDR )
 #define I2C3		( (I2C_Register_Map_t*) I2C3_BASE_ADDR )
 
-// Do not need FLTR register - will not alter digital noise filter
-
 /*************** CLOCK ENABLE/DISABLE/RESET MACROS *****************/
-// Enable GPIO clocks
+/* Enable GPIO clocks */
 #define GPIOA_PCLK_EN() 		( RCC->AHB1ENR |= ( 1 << 0 ) )
 #define GPIOB_PCLK_EN() 		( RCC->AHB1ENR |= ( 1 << 1 ) )
 #define GPIOC_PCLK_EN() 		( RCC->AHB1ENR |= ( 1 << 2 ) )
@@ -224,7 +213,7 @@ typedef struct
 #define GPIOG_PCLK_EN() 		( RCC->AHB1ENR |= ( 1 << 6 ) )
 #define GPIOH_PCLK_EN() 		( RCC->AHB1ENR |= ( 1 << 7 ) )
 #define GPIOI_PCLK_EN() 		( RCC->AHB1ENR |= ( 1 << 8 ) )
-// Disable GPIO clocks
+/* Disable GPIO clocks */
 #define GPIOA_PCLK_DI() 		( RCC->AHB1ENR &= ~( 1 << 0 ) )
 #define GPIOB_PCLK_DI() 		( RCC->AHB1ENR &= ~( 1 << 1 ) )
 #define GPIOC_PCLK_DI() 		( RCC->AHB1ENR &= ~( 1 << 2 ) )
@@ -234,15 +223,15 @@ typedef struct
 #define GPIOG_PCLK_DI() 		( RCC->AHB1ENR &= ~( 1 << 6 ) )
 #define GPIOH_PCLK_DI() 		( RCC->AHB1ENR &= ~( 1 << 7 ) )
 #define GPIOI_PCLK_DI() 		( RCC->AHB1ENR &= ~( 1 << 8 ) )
-// Enable I2C clocks
+/* Enable I2C clocks */
 #define I2C1_PCLK_EN() 			( RCC->APB1ENR |= ( 1 << 21 ) )
 #define I2C2_PCLK_EN() 			( RCC->APB1ENR |= ( 1 << 22 ) )
 #define I2C3_PCLK_EN() 			( RCC->APB1ENR |= ( 1 << 23 ) )
-// Disable I2C clocks
+/* Disable I2C clocks */
 #define I2C1_PCLK_DI() 			( RCC->APB1ENR &= ~( 1 << 21 ) )
 #define I2C2_PCLK_DI() 			( RCC->APB1ENR &= ~( 1 << 22 ) )
 #define I2C3_PCLK_DI() 			( RCC->APB1ENR &= ~( 1 << 23 ) )
-// Reset I2C peripherals
+/* Reset I2C peripherals */
 #define I2C1_PCLK_RST() 		( RCC->APB1RSTR |= ( 1 << 21 ) )
 #define I2C2_PCLK_RST() 		( RCC->APB1RSTR |= ( 1 << 22 ) )
 #define I2C3_PCLK_RST() 		( RCC->APB1RSTR |= ( 1 << 23 ) )
@@ -261,7 +250,7 @@ typedef struct
 #define GPIOI_RESET()			do { (RCC->AHB1RSTR |= (1 << 8)); (RCC->AHB1RSTR &= ~(1 << 8)); } while(0)
 
 
-// Includes for protocol-specific header files
+/* Includes for protocol-specific header files */
 #include "stm32f407xx_i2c_driver.h"
 #include "stm32f407xx_rcc_driver.h"
 #include "stm32f407xx_gpio_driver.h"

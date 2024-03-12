@@ -6,13 +6,13 @@
 
 #define I2C_REG							I2C1
 #define I2C_OWN_ADDR					12
-// Using I2C1 peripheral SDA over GPIOB, pin 7
+/* Using I2C1 peripheral SDA over GPIOB, pin 7 */
 #define SDA_GPIO						GPIOB
-#define	SDA_PIN_NUM						7
+#define	SDA_PIN_NUM						GPIO_PIN_7
 #define SDA_ALT_FUN						4
-// Using I2C1 peripheral SCL over GPIOB, pin 6
+/* Using I2C1 peripheral SCL over GPIOB, pin 6 */
 #define SCL_GPIO						GPIOB
-#define SCL_PIN_NUM						6
+#define SCL_PIN_NUM						GPIO_PIN_6
 #define SDA_ALT_FUN						4
 
 typedef struct

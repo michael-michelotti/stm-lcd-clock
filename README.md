@@ -1,10 +1,16 @@
 # STM32F407xx LCD Clock
 A [STM32F407G-DISC1](https://www.st.com/en/evaluation-tools/stm32f4discovery.html) development board interfaces with a [DS3231 Real Time Clock (RTC) module](https://www.analog.com/media/en/technical-documentation/data-sheets/DS3231.pdf) and a [16x2 LCD screen](https://www.sunfounder.com/products/lcd1602-module) controlled by an HD44780U controller to display the time.
 
+<div align="center">
+  <img src="https://github.com/michael-michelotti/stm-lcd-clock/Img/stm-lcd-clock-demo.gif" alt="Demo usage of STM32 LCD clock" width="800"/>
+</div>
+
 ## Table of Contents
 1. [About the Project](#about-the-project)
 2. [Getting Started](#getting-started)
 3. [Setup](#setup)
+4. [Challenges and Solutions](#challenges-and-solutions)
+5. [Future Improvements](#future-improvements)
 
 ## About the Project
 I'm new to Embedded Systems, so I wanted to build a simple application where I build up various bare metal drivers, then apply some layers of abstraction to utilize those drivers from the application code. I decided to build a clock on an LCD screen. The timekeeping device is a DS3231, which is an RTC chip which talks over I2C. The display device is a 16x2 LCD which is controlled via GPIOs.
@@ -57,4 +63,7 @@ The LCD Vdd and backlight anode are connected to the 5V power rail. The control 
 * E: PA2
 * D4-D7: PA3-PA6
 
+## Challenges and Solutions
 
+
+## Future Improvements

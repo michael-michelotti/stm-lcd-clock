@@ -2,7 +2,7 @@
 A [STM32F407G-DISC1](https://www.st.com/en/evaluation-tools/stm32f4discovery.html) development board interfaces with a [DS3231 Real Time Clock (RTC) module](https://www.analog.com/media/en/technical-documentation/data-sheets/DS3231.pdf) and a [16x2 LCD screen](https://www.sunfounder.com/products/lcd1602-module) controlled by an HD44780U controller to display the time.
 
 <div align="center">
-  <img src="https://github.com/michael-michelotti/stm-lcd-clock/Img/stm-lcd-clock-demo.gif" alt="Demo usage of STM32 LCD clock" width="800"/>
+  <img src="https://github.com/michael-michelotti/stm-lcd-clock/blob/main/Img/stm-lcd-clock-demo.gif" alt="Demo usage of STM32 LCD clock" width="700"/>
 </div>
 
 ## Table of Contents
@@ -32,8 +32,20 @@ I don't necessarily expect that anybody will be building this project in their l
 
 ### Hardware I Used
 * [STM32F407G-DISC1 Microcontroller](https://www.st.com/en/evaluation-tools/stm32f4discovery.html).
+<div align="left">
+  <img src="https://github.com/michael-michelotti/stm-lcd-clock/blob/main/Img/stm32f4-disc1-board.jpg" alt="Demo usage of STM32 LCD clock" width="300"/>
+</div>
+
 * [DS3231 RTC Module](https://www.analog.com/media/en/technical-documentation/data-sheets/DS3231.pdf).
+<div align="left">
+  <img src="https://github.com/michael-michelotti/stm-lcd-clock/blob/main/Img/ds3231-rtc-module.jpg" alt="Demo usage of STM32 LCD clock" width="300"/>
+</div>
+
 * [LCD 1602 Module](https://www.sunfounder.com/products/lcd1602-module).
+<div align="left">
+  <img src="https://github.com/michael-michelotti/stm-lcd-clock/blob/main/Img/lcd-1602a-display.webp" alt="Demo usage of STM32 LCD clock" width="300"/>
+</div>
+
 * USB Micro-AB to USB A cable.
   * Connects the discovery board to your host PC via ST-Link.
 * Breadboard

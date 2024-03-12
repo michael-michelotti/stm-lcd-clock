@@ -1,24 +1,25 @@
-#define DS3231
-
-#include <string.h>
-#include <stdint.h>
-#include <stddef.h>
 #include <stdio.h>
 
 #include "clock.h"
 #include "display.h"
 #include "main.h"
-#include "stm32f407xx.h"
 
 
 #if !defined(__SOFT_FP__) && defined(__ARM_FP)
   #warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
 #endif
 
-
+/* These driver interfaces are defined in Inc/clock.h and Inc/display.h
+ * The specific implementation is defined by macro definitions. If DS3231
+ * is defined, the clock driver uses DS32312 back-end. If LCD1602A is defined,
+ * the display driver uses LCD1602A back-end. Those are the only implemented
+ * driver interfaces right now. */
 Clock_Driver_t 			*app_clock_driver;
 Display_Driver_t		*app_display_driver;
 
+/* These devices are how the user keeps track of the clock and display objects
+ * in the application code. These are attached to back-end specific handles
+ * at the driver level. */
 Clock_Device_t 			ds3231_dev = {
 		.ctrl_stage = CLOCK_CTRL_INIT,
 };
@@ -28,6 +29,7 @@ Display_Device_t		lcd1602a_dev = {
 
 int main(void)
 {
+	/* Specific driver implementations must be retrieved then initialized. */
 	app_clock_driver = get_clock_driver();
 	app_display_driver = get_display_driver();
 
@@ -35,6 +37,7 @@ int main(void)
 	ds3231_dev.ctrl_stage = CLOCK_CTRL_IDLE;
 
 	app_display_driver->Display_Initialize(&lcd1602a_dev);
+	lcd1602a_dev.ctrl_stage = DISPLAY_CTRL_IDLE;
 
 	hours_t hours = {
 			.am_pm = AM_PM_PM,
@@ -74,6 +77,9 @@ int main(void)
 	}
 }
 
+/* These callbacks are called by the clock driver code. All possible callbacks
+ * are defined in Inc/clock.h. Each interrupt-based call to a clock driver API
+ * has an associated callback which is called once the action is completed. */
 void Clock_Get_Seconds_Complete_Callback(Clock_Device_t *clock_dev)
 {
 	app_display_driver->Display_Update_Seconds(clock_dev->time.seconds);

@@ -12,7 +12,7 @@ uint32_t RCC_Get_Sys_Clk_Frequency()
 		case SYS_CLK_HSI:
 			return HSI_CLK_SPEED;
 		case SYS_CLK_HSE:
-			// TODO: implement logic for HSE and PLL
+			/* TODO: implement logic for HSE and PLL */
 			return 0;
 		case SYS_CLK_PLL:
 			return 0;
@@ -35,7 +35,7 @@ uint32_t RCC_Get_APB_Prescaler()
 
 static uint32_t Translate_AHB_Prescaler(uint8_t bit_value)
 {
-	// AHB PRESCALER
+	/* AHB PRESCALER */
 	switch (bit_value)
 	{
 		case 0b0000 ... 0b0111: return 1;
@@ -53,7 +53,7 @@ static uint32_t Translate_AHB_Prescaler(uint8_t bit_value)
 
 static uint32_t Translate_APB_Prescaler(uint8_t bit_value)
 {
-	// APB1 AND APB2 PRESCALER
+	/* APB1 AND APB2 PRESCALER */
 	switch (bit_value)
 	{
 		case 0b000 ... 0b011: return 1;

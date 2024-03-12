@@ -5,19 +5,21 @@
 
 #define LCD1602A
 
+/* Do not really need to keep track of the Display control stage, since there is no
+ * interrupt-based display APIs currently implemented. These would be useful for
+ * interrupt-based logic, though. */
 typedef enum
 {
 	DISPLAY_CTRL_INIT,
 	DISPLAY_CTRL_IDLE,
-	DISPLAY_CTRL_UPDATING
+	DISPLAY_CTRL_UPDATING,
+	DISPLAY_CTRL_ERROR,
 } Display_Ctrl_Stage_t;
-
 
 typedef struct
 {
 	Display_Ctrl_Stage_t ctrl_stage;
 } Display_Device_t;
-
 
 typedef struct
 {
@@ -38,8 +40,6 @@ typedef struct
 } Display_Driver_t;
 
 Display_Driver_t *get_display_driver();
-
-void Display_Update_Seconds_Callback();
 
 #ifdef LCD1602A
 #	include "lcd1602a_display_driver.h"

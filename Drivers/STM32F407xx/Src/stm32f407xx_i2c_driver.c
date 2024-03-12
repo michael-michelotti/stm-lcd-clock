@@ -287,7 +287,7 @@ static void I2C_Handle_TXE(void)
 			return;
 		}
 		/* Depending on handle SR field, either generate stop condition or not */
-		if (p_i2c_handle.sr == I2C_DISABLE_SR)
+		if (p_i2c_handle.i2c_dev.repeat_start == I2C_DISABLE_SR)
 		{
 			I2C_Generate_Stop_Condition(&p_i2c_handle);
 		}

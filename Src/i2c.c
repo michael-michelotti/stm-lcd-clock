@@ -1,5 +1,4 @@
 #include "i2c.h"
-#include <stdlib.h>
 
 uint8_t ring_buffer_output_buffer[256];
 
@@ -32,7 +31,7 @@ void I2C_RX_Ring_Buffer_Write(I2C_Device_t *p_i2c_dev, uint8_t *p_src, size_t nu
 
 		if (p_i2c_dev->rx_ring_buffer_write_ptr == p_i2c_dev->rx_ring_buffer_read_ptr)
 		{
-			/* write pointer has lapped read pointer - ring buffer overflow */
+			/* Write pointer has lapped read pointer - ring buffer overflow */
 			I2C_Error_Handler();
 		}
 		p_src++;
@@ -63,10 +62,9 @@ void I2C_TX_Ring_Buffer_Write(I2C_Device_t *p_i2c_dev, uint8_t *p_src, size_t nu
 
 		if (p_i2c_dev->tx_ring_buffer_write_ptr == p_i2c_dev->tx_ring_buffer_read_ptr)
 		{
-			/* write pointer has lapped read pointer - ring buffer overflow */
+			/* Write pointer has lapped read pointer - ring buffer overflow */
 			I2C_Error_Handler();
 		}
 		p_src++;
 	}
 }
-

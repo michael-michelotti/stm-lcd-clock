@@ -17,11 +17,11 @@ typedef enum
 	I2C_ENABLE_SR
 } Repeated_Start_Enable_t;
 
-// Clock speed options
-#define I2C_SPEED_SM				100000		// 100kHz clock for standard mode
-#define I2C_SPEED_FM				400000		// 400kHz clock for fast mode
+/* Clock speed options */
+#define I2C_SPEED_SM				100000		/* 100kHz clock for standard mode */
+#define I2C_SPEED_FM				400000		/* 400kHz clock for fast mode */
 
-// Enable or disable acknowledge bit after data bit
+/* Enable or disable acknowledge bit after data bit */
 #define I2C_ACK_EN        			1
 #define I2C_ACK_DI			    	0
 
@@ -57,12 +57,17 @@ typedef struct
 #define TX_RING_BUFFER_SIZE 		256
 #define RX_RING_BUFFER_SIZE 		256
 
-void I2C_Write_Complete_Callback(I2C_Device_t *p_i2c_dev);
-void I2C_Read_Complete_Callback(I2C_Device_t *p_i2c_dev);
+/* The I2C device which implements the I2C interface must implement a TX and RX ring buffer */
 uint8_t *I2C_RX_Ring_Buffer_Read(I2C_Device_t *p_i2c_dev, size_t num_bytes);
 void I2C_RX_Ring_Buffer_Write(I2C_Device_t *p_i2c_dev, uint8_t *p_src, size_t num_bytes);
 uint8_t *I2C_TX_Ring_Buffer_Read(I2C_Device_t *p_i2c_dev, size_t num_bytes);
 void I2C_TX_Ring_Buffer_Write(I2C_Device_t *p_i2c_dev, uint8_t *p_src, size_t num_bytes);
+
+/* These callbacks are called at the driver level, for whichever device driver is ipmlementing
+ * this I2C interface. */
+void I2C_Write_Complete_Callback(I2C_Device_t *p_i2c_dev);
+void I2C_Read_Complete_Callback(I2C_Device_t *p_i2c_dev);
+
 void I2C_Error_Handler();
 
 I2C_Interface_t *get_i2c_interface();

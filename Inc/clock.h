@@ -9,7 +9,8 @@ typedef enum
 	CLOCK_CTRL_IDLE,
 	CLOCK_CTRL_INIT,
 	CLOCK_CTRL_BUSY_GETTING,
-	CLOCK_CTRL_BUSY_SETTING
+	CLOCK_CTRL_BUSY_SETTING,
+	CLOCK_CTRL_ERROR
 } Clock_Ctrl_Stage_t;
 
 
@@ -19,7 +20,6 @@ typedef struct
 	full_date_t			date;
 	Clock_Ctrl_Stage_t	ctrl_stage;
 } Clock_Device_t;
-
 
 typedef struct
 {

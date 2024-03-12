@@ -4,69 +4,69 @@
 #include "stm32f407xx.h"
 #include <stdint.h>
 
-#define GPIO_PIN_0		0
-#define GPIO_PIN_1		1
-#define GPIO_PIN_2		2
-#define GPIO_PIN_3		3
-#define GPIO_PIN_4		4
-#define GPIO_PIN_5		5
-#define GPIO_PIN_6		6
-#define GPIO_PIN_7		7
-#define GPIO_PIN_8		8
-#define GPIO_PIN_9		9
-#define GPIO_PIN_10		10
-#define GPIO_PIN_11		11
-#define GPIO_PIN_12		12
-#define GPIO_PIN_13		13
-#define GPIO_PIN_14		14
-#define GPIO_PIN_15		15
+#define GPIO_PIN_0              0
+#define GPIO_PIN_1              1
+#define GPIO_PIN_2              2
+#define GPIO_PIN_3              3
+#define GPIO_PIN_4              4
+#define GPIO_PIN_5              5
+#define GPIO_PIN_6              6
+#define GPIO_PIN_7              7
+#define GPIO_PIN_8              8
+#define GPIO_PIN_9              9
+#define GPIO_PIN_10             10   
+#define GPIO_PIN_11             11
+#define GPIO_PIN_12             12
+#define GPIO_PIN_13             13
+#define GPIO_PIN_14             14
+#define GPIO_PIN_15             15
 
 typedef struct
 {
-	uint8_t gpio_pin_num;
-	uint8_t gpio_pin_mode;
-	uint8_t gpio_pin_speed;
-	uint8_t gpio_pin_pu_pd_ctrl;
-	uint8_t gpio_pin_op_type;
-	uint8_t gpio_pin_alt_fun_mode;
+    uint8_t gpio_pin_num;
+    uint8_t gpio_pin_mode;
+    uint8_t gpio_pin_speed;
+    uint8_t gpio_pin_pu_pd_ctrl;
+    uint8_t gpio_pin_op_type;
+    uint8_t gpio_pin_alt_fun_mode;
 } GPIO_Pin_Config_t;
 
 typedef struct
 {
-	GPIO_Register_Map_t *p_gpio_x;
-	GPIO_Pin_Config_t gpio_pin_config;
+    GPIO_Register_Map_t *p_gpio_x;
+    GPIO_Pin_Config_t gpio_pin_config;
 } GPIO_Handle_t;
 
 typedef enum
 {
-	GPIO_MODE_IN,
-	GPIO_MODE_OUT,
-	GPIO_MODE_ALT,
-	GPIO_MODE_ANALOG,
-	GPIO_MODE_IN_FE, 	// interrupt mode, falling edge detection
-	GPIO_MODE_IN_RE,	// interrupt mode, rising edge detection
-	GPIO_MODE_IN_RFT	// interrupt mode, rising and falling edge detection
+    GPIO_MODE_IN,
+    GPIO_MODE_OUT,
+    GPIO_MODE_ALT,
+    GPIO_MODE_ANALOG,
+    GPIO_MODE_IN_FE,    // interrupt mode, falling edge detection
+    GPIO_MODE_IN_RE,    // interrupt mode, rising edge detection
+    GPIO_MODE_IN_RFT    // interrupt mode, rising and falling edge detection
 } GPIO_Pin_Mode_t;
 
 typedef enum
 {
-	GPIO_OUT_PP,
-	GPIO_OUT_OD
+    GPIO_OUT_PP,
+    GPIO_OUT_OD
 } GPIO_Output_Mode_t;
 
 typedef enum
 {
-	GPIO_SPEED_LOW,
-	GPIO_SPEED_MED,
-	GPIO_SPEED_FAST,
-	GPIO_SPEED_HIGH
+    GPIO_SPEED_LOW,
+    GPIO_SPEED_MED,
+    GPIO_SPEED_FAST,
+    GPIO_SPEED_HIGH
 } GPIO_Output_Speed_t;
 
 typedef enum
 {
-	GPIO_PUPD_NONE,
-	GPIO_PUPD_PU,
-	GPIO_PUPD_PD
+    GPIO_PUPD_NONE,
+    GPIO_PUPD_PU,
+    GPIO_PUPD_PD
 } GPIO_PUPD_Mode_t;
 
 

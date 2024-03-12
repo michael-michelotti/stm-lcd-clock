@@ -3,18 +3,18 @@
 
 /*************** RELEVANT BIT POSITIONS FOR RCC PERIPHERAL REGISTERS *****************/
 /* RCC_CFGR - Configuration register; determines all clock prescalars */
-#define RCC_CFGR_SW			0		/* Clock select; 2 bits 0:1, set by SW */
-#define RCC_CFGR_SWS		2		/* Clock status; 2 bits 2:3, set by HW as status */
-#define RCC_CFGR_HPRE		4		/* AHB prescaler; system clock division factor for AHB */
-#define RCC_CFGR_PPRE1		10		/* APB1 prescaler; division from AHB clock to APB1 clock */
-#define RCC_CFGR_PPRE2		13		/* APB2 prescaler; division from AHB clock to APB2 clock */
+#define RCC_CFGR_SW             0   /* Clock select; 2 bits 0:1, set by SW */
+#define RCC_CFGR_SWS            2   /* Clock status; 2 bits 2:3, set by HW as status */
+#define RCC_CFGR_HPRE           4   /* AHB prescaler; system clock division factor for AHB */
+#define RCC_CFGR_PPRE1          10  /* APB1 prescaler; division from AHB clock to APB1 clock */
+#define RCC_CFGR_PPRE2          13  /* APB2 prescaler; division from AHB clock to APB2 clock */
 
 typedef enum
 {
-	SYS_CLK_HSI,
-	SYS_CLK_HSE,
-	SYS_CLK_PLL,
-	SYS_CLK_NA
+    SYS_CLK_HSI,
+    SYS_CLK_HSE,
+    SYS_CLK_PLL,
+    SYS_CLK_NA
 } System_Clock_t;
 
 uint32_t RCC_Get_Sys_Clk_Frequency();

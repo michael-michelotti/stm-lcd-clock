@@ -1,9 +1,7 @@
 # STM32F407xx LCD Clock
 A [STM32F407G-DISC1](https://www.st.com/en/evaluation-tools/stm32f4discovery.html) development board interfaces with a [DS3231 Real Time Clock (RTC) module](https://www.analog.com/media/en/technical-documentation/data-sheets/DS3231.pdf) and a [16x2 LCD screen](https://www.sunfounder.com/products/lcd1602-module) controlled by an HD44780U controller to display the time.
 
-<div align="center">
-  <img src="https://github.com/michael-michelotti/stm-lcd-clock/blob/main/Img/stm-lcd-clock-demo.gif" alt="Demo usage of STM32 LCD clock" width="700"/>
-</div>
+![Demo usage of STM32 LCD clock](Img/stm-lcd-clock-demo.gif)
 
 ## Table of Contents
 1. [About the Project](#about-the-project)
@@ -20,21 +18,9 @@ I wanted to practice constructing bare metal drivers from scratch. I also wanted
 I don't necessarily expect that anybody to reconstruct this project in their local environment, so I won't provide excruciating detail about the setup; I will simply list out the hardware and software I used.
 
 ### Hardware I Used
-* [STM32F407G-DISC1 Microcontroller](https://www.st.com/en/evaluation-tools/stm32f4discovery.html).
-<div align="left">
-  <img src="https://github.com/michael-michelotti/stm-lcd-clock/blob/main/Img/stm32f4-disc1-board.jpg" alt="Demo usage of STM32 LCD clock" width="300"/>
-</div>
-
-* [DS3231 RTC Module](https://www.analog.com/media/en/technical-documentation/data-sheets/DS3231.pdf).
-<div align="left">
-  <img src="https://github.com/michael-michelotti/stm-lcd-clock/blob/main/Img/ds3231-rtc-module.jpg" alt="Demo usage of STM32 LCD clock" width="300"/>
-</div>
-
-* [LCD 1602 Module](https://www.sunfounder.com/products/lcd1602-module).
-<div align="left">
-  <img src="https://github.com/michael-michelotti/stm-lcd-clock/blob/main/Img/lcd-1602a-display.webp" alt="Demo usage of STM32 LCD clock" width="300"/>
-</div>
-
+* __STM32F407G-DISC1 Microcontroller__ - The main development board used for this project. [View product.](https://www.st.com/en/evaluation-tools/stm32f4discovery.html)
+* __DS3231 RTC Module__ - I2C RTC chip. [View product.](https://www.analog.com/media/en/technical-documentation/data-sheets/DS3231.pdf)
+* __LCD 1602 Module__ - 16x2 LCD GUI. [View product.](https://www.sunfounder.com/products/lcd1602-module)
 * USB Micro-AB to USB A cable.
   * Connects the discovery board to your host PC via ST-Link.
 * Breadboard
@@ -45,7 +31,7 @@ I don't necessarily expect that anybody to reconstruct this project in their loc
   * V0 pin of the LCD screen attaches to middle leg of pot, controls screen contrast. 
 
 ### Software I Used
-* [STM32CubeIDE](https://www.st.com/en/development-tools/stm32cubeide.html)
+* __STM32CubeIDE__ - IDE used for development. [Download.](https://www.st.com/en/development-tools/stm32cubeide.html)
 
 ## Setup
 #### Power, Code Flashing

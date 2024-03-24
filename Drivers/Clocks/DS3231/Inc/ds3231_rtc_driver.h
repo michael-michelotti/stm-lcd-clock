@@ -38,7 +38,6 @@ typedef struct
 } DS3231_Handle_t;
 
 /* Addresses of every DS3231 internal register */
-/* TODO: Decide if this should be an enum or not */
 #define DS3231_ADDR_BASE                    0x00
 #define DS3231_ADDR_SECONDS                 0x00
 #define DS3231_ADDR_MINUTES                 0x01

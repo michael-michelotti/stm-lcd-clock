@@ -321,7 +321,7 @@ void I2C_Read_Complete_Callback(I2C_Device_t *p_i2c_dev)
             ds3231_handle.clock_dev->time = full_time;
             Clock_Get_Full_Time_Complete_Callback(ds3231_handle.clock_dev);
             break;
-        case DS3231_UNIT_DATETIME:  /* TODO: make a function out of extracting date and time */
+        case DS3231_UNIT_DATETIME:
             out_buffer = I2C_RX_Ring_Buffer_Read(p_i2c_dev, DS3231_LEN_DATETIME);
             full_time = Convert_Full_Time_From_DS3231(out_buffer);
             full_date = Convert_Full_Date_From_DS3231(out_buffer + DS3231_LEN_FULL_TIME);
@@ -910,7 +910,6 @@ static void Convert_Datetime_To_DS3231(full_datetime_t datetime, uint8_t *p_tx_b
 }
 
 /*************** GENERAL UTILITY FUNCTIONS *****************/
-// TODO: Currently only works for converting to 2 digit BCD (99 is max value)
 static uint8_t Convert_Binary_To_BCD(uint8_t binary_byte)
 {
     uint8_t low_nybble = binary_byte % 10;
@@ -919,7 +918,6 @@ static uint8_t Convert_Binary_To_BCD(uint8_t binary_byte)
     return ((high_nybble << 4) | low_nybble);
 }
 
-// TODO: Currently only works for converting to 2 digit BCD (99 is max value)
 static uint8_t Convert_BCD_To_Binary(uint8_t bcd_byte)
 {
     // zeroes place (bottom 4 bits)

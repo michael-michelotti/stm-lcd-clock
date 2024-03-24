@@ -12,7 +12,6 @@ uint32_t RCC_Get_Sys_Clk_Frequency()
         case SYS_CLK_HSI:
             return HSI_CLK_SPEED;
         case SYS_CLK_HSE:
-            /* TODO: implement logic for HSE and PLL */
             return 0;
         case SYS_CLK_PLL:
             return 0;

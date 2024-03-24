@@ -211,7 +211,7 @@ static void I2C_Master_Receive_IT(uint32_t len, uint8_t slave_addr , uint8_t rep
 
 static void I2C_DeInit(void)
 {
-    /* TODO: Implement I2C deinitialization */
+    /* TODO: Implement I2C deinitialization. */
 }
 /*************** INTERFACE IMPLEMENTATION FUNCTIONS END *****************/
 
